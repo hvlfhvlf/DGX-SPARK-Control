@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-version="${1:-0.1.0}"
+version="${1:-0.1.1}"
 [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Usage: bash update.sh X.Y.Z'; exit 1; }
 temp=$(mktemp -d)
 trap 'rm -rf -- "$temp"' EXIT

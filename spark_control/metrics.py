@@ -1,6 +1,7 @@
 """Read counters once per 5 seconds, only on demand. No GPU compute context."""
 import ctypes as c
 import os
+import math
 import threading
 import time
 from collections import deque
@@ -16,6 +17,19 @@ def read(path):
 
 class Utilization(c.Structure):
     _fields_ = [("gpu", c.c_uint), ("memory", c.c_uint)]
+
+
+def filesystem_usage(path='/'):
+    volume = os.statvfs(path)
+    total = volume.f_blocks * volume.f_frsize
+    free = volume.f_bfree * volume.f_frsize
+    available = volume.f_bavail * volume.f_frsize
+    used = total - free
+    return {'disk': round(used/2**40, 3), 'disk_total_tib': round(total/2**40, 3),
+            'disk_mount': path, 'disk_total_bytes': total, 'disk_used_bytes': used,
+            'disk_available_bytes': available, 'disk_reserved_free_bytes': max(0, free-available),
+            'disk_used_percent': used/total*100 if total else None,
+            'disk_df_percent': math.ceil(used/(used+available)*100) if used+available else None}
 
 
 class GPU:
@@ -39,6 +53,17 @@ class GPU:
             rc = getattr(self.lib, function)(self.device, *args, c.byref(result))
             if rc == 0:
                 return result
+        except AttributeError:
+            pass
+        return None
+
+    def name(self):
+        if not self.lib:
+            return None
+        try:
+            value = c.create_string_buffer(96)
+            if self.lib.nvmlDeviceGetName(self.device, value, c.c_uint(len(value))) == 0:
+                return value.value.decode('utf-8', errors='replace')
         except AttributeError:
             pass
         return None
@@ -123,9 +148,7 @@ class Collector:
             mem = {parts[0].rstrip(":"): int(parts[1]) * 1024 for line in read("/proc/meminfo").splitlines() if len(parts := line.split()) >= 2}
             total = mem.get("MemTotal", 0)
             available = mem.get("MemAvailable", 0)
-            volume = os.statvfs("/")
-            disk_total = volume.f_blocks * volume.f_frsize
-            disk_free = volume.f_bfree * volume.f_frsize
+            storage = filesystem_usage('/')
             clocks = [int(value) / 1e6 for path in Path("/sys/devices/system/cpu").glob("cpu[0-9]*/cpufreq/scaling_cur_freq") if (value := read(path).strip()).isdigit()]
             sensors = []
             for hwmon in sorted(Path("/sys/class/hwmon").glob("hwmon*")):
@@ -141,7 +164,7 @@ class Collector:
                 "memory": round((total - available) / 2**30, 2), "memory_total_gib": round(total / 2**30, 2),
                 "memory_available_gib": round(available / 2**30, 2),
                 "swap_used_gib": round((mem.get("SwapTotal", 0) - mem.get("SwapFree", 0)) / 2**30, 2),
-                "disk": round((disk_total - disk_free) / 2**40, 3), "disk_total_tib": round(disk_total / 2**40, 3),
+                **storage,
                 "network": rates(interfaces, previous_net), "diskio": rates(disks, previous_disk),
                 "interfaces": list(interfaces), "disks": list(disks), "sensors": sensors[:64],
                 "speed": None, "source": "live", "rate_warming_up": not usable,

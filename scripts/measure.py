@@ -16,7 +16,7 @@ def request(path):
 
 
 def resource():
-    rows = subprocess.check_output(['systemctl', '--user', 'show', 'dgx-spark-control', '-p', 'MemoryCurrent', '-p', 'MemoryPeak', '-p', 'MemoryMax', '-p', 'CPUUsageNSec', '-p', 'ControlGroup'], text=True)
+    rows = subprocess.check_output(['systemctl', '--user', 'show', 'dgx-spark-control.slice', '-p', 'MemoryCurrent', '-p', 'MemoryPeak', '-p', 'MemoryMax', '-p', 'CPUUsageNSec', '-p', 'ControlGroup'], text=True)
     result = dict(line.split('=', 1) for line in rows.splitlines())
     for key in list(result):
         if result[key].isdigit():
@@ -40,7 +40,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
 duration = time.monotonic() - start
 load_end = resource()
 cpu_ns = load_end.get('CPUUsageNSec', 0) - load_start.get('CPUUsageNSec', 0)
-result = {'version': before['version'], 'idle_seconds': 15, 'idle_collections_delta': after['collections'] - before['collections'], 'idle_resources': idle_end, 'four_clients_seconds': round(duration, 2), 'four_clients_core_cpu_percent': round(cpu_ns / 1e9 / duration * 100, 3), 'loaded_resources': load_end, 'health': request('health'), 'notes': 'Read-only synthetic HTTP clients; no inference benchmark. Memory values are cgroup bytes.'}
+result = {'version': before['version'], 'idle_seconds': 15, 'idle_collections_delta': after['collections'] - before['collections'], 'idle_resources': idle_end, 'four_clients_seconds': round(duration, 2), 'four_clients_core_cpu_percent': round(cpu_ns / 1e9 / duration * 100, 3), 'loaded_resources': load_end, 'health': request('health'), 'notes': 'Read-only synthetic HTTP clients; no inference benchmark. Memory values are combined server + tray slice bytes. Close dashboard tabs for idle validation.'}
 assert result['idle_collections_delta'] == 0
 assert load_end['MemoryCurrent'] < 512_000_000
 assert load_end['MemoryMax'] < 512_000_000

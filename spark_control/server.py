@@ -15,6 +15,8 @@ from urllib.parse import urlsplit, unquote
 from .config import Config
 from .metrics import Collector
 from .models import Models
+from .hardware import identity
+from .sessions import Sessions
 
 ROOT = Path(__file__).resolve().parent.parent
 VERSION = (ROOT / "VERSION").read_text().strip()
@@ -27,11 +29,13 @@ class Server(ThreadingHTTPServer):
     def __init__(self, address, config):
         self.config = config
         self.collector = Collector()
+        self.hardware = identity(config.directory, self.collector.gpu.name())
         self.models = Models(config)
         self.slots = threading.BoundedSemaphore(8)
         self.events = deque(maxlen=200)
         self.failure_lock = threading.Lock()
         self.failures = deque(maxlen=60)
+        self.sessions = Sessions(config)
         super().__init__(address, Handler)
 
     def process_request(self, request, address):
@@ -76,27 +80,30 @@ class Handler(BaseHTTPRequestHandler):
         if origin and urlsplit(origin).netloc != self.headers.get("Host"):
             self.reply(403, {"error": "Origin mismatch"})
             return False
-        if not hmac.compare_digest(supplied.encode(), self.server.config.token.encode()):
+        valid_session = self.server.sessions.valid(supplied)
+        if not valid_session and not hmac.compare_digest(supplied.encode(), self.server.config.token.encode()):
             now = time.monotonic()
             with self.server.failure_lock:
                 while self.server.failures and now - self.server.failures[0] > 60:
                     self.server.failures.popleft()
                 limited = len(self.server.failures) >= 30
                 self.server.failures.append(now)
-            self.reply(429 if limited else 401, {"error": "Access token required"})
+            self.reply(429 if limited else 401, {"error": "Sign in required"})
             return False
         return True
 
     def do_GET(self):
         path = urlsplit(self.path).path
         if path == "/api/info":
-            self.reply(200, {"version": VERSION, "mode": "live", "auth_required": True})
+            self.reply(200, {"version": VERSION, "mode": "live", "auth_required": True, "auth_mode": "password" if self.server.config.password else "token"})
             return
         if path.startswith("/api/"):
             if not self.authenticated():
                 return
             if path == "/api/settings":
                 self.reply(200, {"spark_name": self.server.config.value["spark_name"], "version": VERSION})
+            elif path == "/api/hardware":
+                self.reply(200, self.server.hardware)
             elif path == "/api/metrics":
                 self.reply(200, self.server.collector.snapshot())
             elif path == "/api/history":
@@ -118,7 +125,12 @@ class Handler(BaseHTTPRequestHandler):
         self.reply(200, file.read_bytes(), mimetypes.guess_type(file.name)[0] or "application/octet-stream")
 
     def do_POST(self):
-        if not self.authenticated():
+        path = urlsplit(self.path).path
+        if path != '/api/login' and not self.authenticated():
+            return
+        origin = self.headers.get('Origin')
+        if origin and urlsplit(origin).netloc != self.headers.get('Host'):
+            self.reply(403, {'error': 'Origin mismatch'})
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -126,8 +138,25 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply(413, {"error": "Request size must be 1–4096 bytes"})
                 return
             data = json.loads(self.rfile.read(length))
-            path = urlsplit(self.path).path
-            if path == "/api/settings":
+            if path == '/api/login':
+                now = time.monotonic()
+                with self.server.failure_lock:
+                    while self.server.failures and now - self.server.failures[0] > 60:
+                        self.server.failures.popleft()
+                    limited = len(self.server.failures) >= 30
+                if limited:
+                    self.reply(429, {'error': 'Too many attempts. Try again in a minute.'})
+                elif not self.server.config.check_password(data.get('password')):
+                    with self.server.failure_lock:
+                        self.server.failures.append(now)
+                    self.reply(401, {'error': 'Password not accepted'})
+                else:
+                    token = self.server.sessions.issue()
+                    self.reply(200, {'session': token, 'expires_in': None, 'persistence': 'until_logout_or_password_reset'})
+            elif path == '/api/logout':
+                self.server.sessions.revoke(self.headers.get('Authorization', '').removeprefix('Bearer '))
+                self.reply(200, {'ok': True})
+            elif path == "/api/settings":
                 self.reply(200, {"spark_name": self.server.config.rename(data.get("spark_name"))})
             elif path == "/api/models/action":
                 result = self.server.models.action(data.get("id"), data.get("action"))

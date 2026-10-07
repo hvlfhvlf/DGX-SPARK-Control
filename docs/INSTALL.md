@@ -1,4 +1,4 @@
-# 설치 / Installation — 0.1.0
+# 설치 / Installation — 0.1.1
 
 ## 지원 범위
 
@@ -19,11 +19,18 @@ README의 GitHub Release 다운로드 → SHA256 확인 → 빈 디렉터리 압
 | `~/.local/share/dgx-spark-control-app/previous` | 이전 버전 링크 |
 | `~/.local/share/dgx-spark-control/config.json` | 이름·모델 등록·검색 경로 |
 | `~/.local/share/dgx-spark-control/access-token` | 비공개 접속 토큰, 0600 |
+| `~/.local/share/dgx-spark-control/password.json` | 비밀번호 해시와 salt, 0600 |
+| `~/.local/share/dgx-spark-control/sessions.json` | 최대 32개 기기 세션 해시, 0600 |
+| `~/.local/share/dgx-spark-control/hardware.json` | 설치 시 감지한 펌웨어 메모리 용량 |
 | `~/.config/systemd/user/dgx-spark-control.service` | 서버 자동 실행·자원 한도 |
 
 ## 접속
 
-Spark 브라우저에서 http://127.0.0.1:8767 접속. 로컬 터미널에서 `cat ~/.local/share/dgx-spark-control/access-token`으로 읽은 토큰을 화면에 입력한다. 토큰은 브라우저 탭의 sessionStorage에만 보관한다. 설정·실측값·모델 제어 API는 모두 인증이 필요하다.
+대화형 설치 시 비밀번호를 두 번 입력한다. Spark 브라우저에서 http://127.0.0.1:8767 접속 후 비밀번호로 로그인한다. 비밀번호가 설정되지 않은 비대화형 설치만 기존 access-token 로그인을 사용한다. 로그인 세션은 이 브라우저의 localStorage와 서버의 세션 해시로 유지하며 기간 제한이 없다. 서버 재시작/업데이트, 브라우저 종료 후에도 유지한다. 직접 로그아웃·비밀번호 재설정·브라우저 데이터 삭제 시 해제된다. 최대 32개 세션을 넘으면 가장 오래 발급된 세션을 제거한다.
+
+비밀번호를 잊으면 Spark 로컬 트레이 또는 `python3 ~/.local/share/dgx-spark-control-app/current/scripts/set-password.py`로 새 값을 설정하고 서버를 재시작한다. 이전 비밀번호는 요구하지 않는다. 원격 웹의 인증 우회 복구는 제공하지 않는다. [데스크톱 가이드](DESKTOP.md).
+
+GPU/CPU/메모리 정보는 자동 감지한다. 설치 시 이미 사용 가능한 권한으로 dmidecode type 17 읽기를 한 번 시도한다(sudo -n만 사용, 권한 요청 없음). 실패하면 /proc/meminfo의 OS 가용 총량을 명시적으로 표시한다. 시리얼 번호와 전체 DMI 출력은 저장하지 않는다.
 
 다른 기기에서 SSH 포워딩:
 

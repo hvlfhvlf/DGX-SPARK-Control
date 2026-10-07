@@ -1,4 +1,6 @@
 import json
+import hashlib
+import hmac
 import os
 import secrets
 import threading
@@ -24,7 +26,38 @@ class Config:
         self.token = token_file.read_text().strip()
         if not self.token:
             raise ValueError("Access token cannot be empty")
+        password_file = self.directory / 'password.json'
+        self.password = json.loads(password_file.read_text()) if password_file.exists() else None
         self.save()
+
+    def set_password(self, password):
+        if not isinstance(password, str) or not 4 <= len(password) <= 128:
+            raise ValueError('Password must contain 4-128 characters')
+        salt = secrets.token_bytes(16)
+        iterations = 600000
+        digest = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, iterations)
+        record = {'algorithm': 'pbkdf2-sha256', 'iterations': iterations, 'salt': salt.hex(), 'hash': digest.hex()}
+        temporary = self.directory / 'password.tmp'
+        fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, 'w') as stream:
+            json.dump(record, stream)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, self.directory / 'password.json')
+        self.password = record
+
+    def check_password(self, password):
+        if not self.password or not isinstance(password, str) or len(password) > 128:
+            return False
+        record = self.password
+        try:
+            iterations = int(record['iterations'])
+            if record['algorithm'] != 'pbkdf2-sha256' or not 100000 <= iterations <= 2000000:
+                return False
+            digest = hashlib.pbkdf2_hmac('sha256', password.encode(), bytes.fromhex(record['salt']), iterations)
+            return hmac.compare_digest(digest, bytes.fromhex(record['hash']))
+        except (ValueError, KeyError, TypeError):
+            return False
 
     def save(self):
         with self.lock:

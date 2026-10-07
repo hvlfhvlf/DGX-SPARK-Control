@@ -18,12 +18,30 @@ stage=$(mktemp -d "$app/releases/.stage-XXXXXX")
 cp -R "$source_dir/spark_control" "$source_dir/web" "$source_dir/scripts" "$source_dir/docs" "$stage/"
 cp "$source_dir/VERSION" "$source_dir/install.sh" "$source_dir/update.sh" "$source_dir/README.md" "$stage/"
 python3 -m compileall -q "$stage/spark_control"
+python3 "$stage/scripts/probe-hardware.py" "$data"
+if [[ ! -f "$data/password.json" ]]; then
+  if [[ -t 0 ]]; then
+    python3 "$stage/scripts/set-password.py" "$data"
+  else
+    echo 'Non-interactive install: existing token access retained. Set a password later with scripts/set-password.py.'
+  fi
+fi
 old=$(readlink "$app/current" || true)
 release="$app/releases/$version-$stamp"
 mv "$stage" "$release"
 ln -sfn "$release" "$app/current.next"
 mv -Tf "$app/current.next" "$app/current"
 if [[ -n $old ]]; then ln -sfn "$old" "$app/previous"; fi
+cat > "$HOME/.config/systemd/user/dgx-spark-control.slice" <<'SLICE'
+[Unit]
+Description=DGX-SPARK-Control total resource budget
+[Slice]
+CPUAccounting=yes
+MemoryAccounting=yes
+MemoryHigh=256M
+MemoryMax=480M
+MemorySwapMax=0
+SLICE
 cat > "$HOME/.config/systemd/user/dgx-spark-control.service" <<'UNIT'
 [Unit]
 Description=DGX-SPARK-Control lightweight dashboard
@@ -33,6 +51,7 @@ StartLimitBurst=3
 
 [Service]
 Type=simple
+Slice=dgx-spark-control.slice
 WorkingDirectory=%h/.local/share/dgx-spark-control-app/current
 ExecStart=/usr/bin/python3 -m spark_control.server
 Environment=PYTHONDONTWRITEBYTECODE=1
@@ -53,6 +72,38 @@ LockPersonality=yes
 [Install]
 WantedBy=default.target
 UNIT
+cat > "$HOME/.config/systemd/user/dgx-spark-control-tray.service" <<'TRAY'
+[Unit]
+Description=DGX-SPARK-Control local desktop tray
+PartOf=graphical-session.target
+After=graphical-session.target
+StartLimitIntervalSec=120
+StartLimitBurst=3
+[Service]
+Type=simple
+Slice=dgx-spark-control.slice
+WorkingDirectory=%h/.local/share/dgx-spark-control-app/current
+ExecStart=/usr/bin/python3 -m spark_control.tray
+Environment=PYTHONDONTWRITEBYTECODE=1
+MemoryAccounting=yes
+MemoryMax=128M
+MemorySwapMax=0
+TasksMax=32
+UMask=0077
+NoNewPrivileges=yes
+Restart=on-failure
+RestartSec=10
+TRAY
+mkdir -p "$HOME/.config/autostart"
+cat > "$HOME/.config/autostart/dgx-spark-control-tray.desktop" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=DGX-SPARK-Control
+Comment=Local dashboard settings and password recovery
+Exec=/bin/bash "$app/current/scripts/start-tray.sh"
+Terminal=false
+X-GNOME-Autostart-enabled=true
+DESKTOP
 systemctl --user daemon-reload
 systemctl --user enable --now dgx-spark-control.service
 systemctl --user restart dgx-spark-control.service
@@ -68,7 +119,13 @@ if ! python3 "$release/scripts/healthcheck.py"; then
   fi
   exit 1
 fi
+if systemctl --user is-active --quiet graphical-session.target && python3 -c 'import gi; gi.require_version("Gtk", "3.0"); gi.require_version("AyatanaAppIndicator3", "0.1")' 2>/dev/null; then
+  systemctl --user restart dgx-spark-control-tray.service || true
+else
+  echo 'Desktop tray available after GTK/AppIndicator setup and desktop login; see docs/DESKTOP.md.'
+fi
 echo "Installed DGX-SPARK-Control $version"
 echo 'Open http://127.0.0.1:8767 on Spark, or use the Tailscale/SSH instructions in docs/INSTALL.md.'
-echo "Access token is stored in $data/access-token (do not publish it)."
+echo 'Sign in with your installation password. For local password recovery, see docs/DESKTOP.md.'
+echo "Private maintenance token is stored in $data/access-token (do not publish it)."
 echo 'For startup after reboot without login, an administrator may enable loginctl enable-linger for your user.'

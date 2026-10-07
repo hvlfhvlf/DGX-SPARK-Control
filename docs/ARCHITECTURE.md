@@ -12,6 +12,8 @@ Browser (static JS, charts, personal appearance)
       ├─ Collector: cached NVML session, /proc, /sys, statvfs
       ├─ History: deque 720 samples, memory only
       └─ Models: explicit user-systemd service allowlist
+Optional GTK tray → local settings/password recovery (no telemetry polling)
+Server + tray → dgx-spark-control.slice (combined 480 MiB limit)
 ```
 
 ## 파일별 책임
@@ -20,6 +22,9 @@ Browser (static JS, charts, personal appearance)
 - `config.py`: config schema 1, 초기값 `DGX_SPARK`, 원자적 저장, 토큰 생성.
 - `metrics.py`: 5초 캐시, CPU delta, 공유 메모리, GPU NVML, 센서 식별자, 물리 NIC/디스크 I/O, deque 이력.
 - `models.py`: 서비스 레지스트리, 시작/정지 요청, 10초 상태 캐시, 명시적 경로 검색.
+- `hardware.py`: 펌웨어 설치 용량과 OS MemTotal, NVML GPU 이름, 아키텍처·코어 수. 재시작 시 한 번 읽는 인벤토리.
+- `sessions.py`: 최대 32개 세션의 해시를 원자적으로 저장. 고정 만료 없음. 비밀번호 기록의 fingerprint가 바뀌면 기존 세션 무효화.
+- `tray.py`: 선택적 GTK/AppIndicator 데스크톱 메뉴. 정기 수집 없음, 로컬 OS 사용자 권한으로 비밀번호 복구 가능.
 - `web/runtime.js`: 실측 운영 UI. 서버 데이터와 브라우저 개인화를 구분한다.
 - `web/app.js`, `metric-details.js`: 기존 디자인 기반·모달 모션. 모의 갱신은 설치판에서 비활성화한다. 후속 버전에서 순수 UI 모듈로 분리할 수 있다.
 - `install.sh`, `update.sh`, `scripts/rollback.sh`: 배포·버전 변경. 사용자 데이터는 코드 밖에 저장.
@@ -34,6 +39,8 @@ Browser (static JS, charts, personal appearance)
 - 15초 이상 수집 공백은 rate baseline을 새로 잡는다. 이력 그래프의 공백을 보간해서 실측처럼 표시하지 않는다.
 - 센서는 원래 hwmon source와 label을 표시한다. ACPI를 CPU/SoC라고 임의 명명하지 않는다.
 - GPU 전력은 `nvmlDeviceGetPowerUsage` 반환값이다. 전체 시스템/벽전력으로 표시하지 않는다. 센서별 평균/순간 의미는 드라이버에 따르므로 UI는 GPU 전력으로 표시한다.
+- SSD는 `/` 파일시스템 statvfs. used=(blocks-bfree)*frsize, available=bavail*frsize, reserved-free=(bfree-bavail)*frsize. 카드 게이지는 used/total이며 df 퍼센트는 ceil(used/(used+available)*100)로 구분한다. 원시 SSD 용량과 같다고 표시하지 않는다.
+- RAM은 firmware installed bytes와 OS usable bytes를 별도로 제공. UI는 정확한 GiB 환산을 사용하며 OS 값을 임의로 64/128에 맞춰 반올림하지 않는다.
 
 ## API
 
@@ -42,6 +49,9 @@ Browser (static JS, charts, personal appearance)
 | Endpoint | 동작 |
 |---|---|
 | GET `/api/settings` | 서버 이름·버전 |
+| POST `/api/login` | 비밀번호 확인, 무기한 기기 세션 발급 (원문 저장 없음) |
+| POST `/api/logout` | 현재 세션 폐기 |
+| GET `/api/hardware` | 실제 GPU/CPU 아키텍처·코어·설치/OS 메모리 |
 | POST `/api/settings` | `{spark_name}` 1–32자 저장 |
 | GET `/api/metrics` | 최대 5초당 1회 수집, 여러 요청 결과 공유 |
 | GET `/api/history` | 실제 최근 1시간 이력, 최대 720 |
@@ -60,3 +70,5 @@ Browser (static JS, charts, personal appearance)
 정적 자산과 브라우저 애니메이션은 사용자 기기에서 렌더링한다. 모델 시작은 systemd에 요청하여 모델이 대시보드 cgroup 안에서 실행되지 않도록 한다. 이 때문에 512 MB 제한은 모델 메모리를 제한하지 않는다.
 
 표준 라이브러리 HTTP 서버는 인터넷 공개 서비스로 사용하지 않는다. localhost + Tailscale/SSH, 인증, Origin 검증, CSP, 경로 경계 확인, thread/body 상한으로 범위를 제한한다. 토큰 및 config를 공개 저장소에 넣지 않는다.
+
+비밀번호는 랜덤 salt + PBKDF2-HMAC-SHA256 600,000회 해시로 저장한다. 로그인 실패 30회/분 제한. 로그인 후 랜덤 세션을 브라우저 localStorage에, 그 SHA256만 서버 sessions.json(0600)에 보관한다. 고정 만료 없음은 사용자 요구사항이다. 재시작/업데이트는 보존하고 로그아웃/비밀번호 재설정은 해제한다. 최대 32기기를 넘으면 가장 오래 발급된 세션을 제거한다. 로컬 healthcheck/트레이는 0600 유지관리 토큰을 사용하며 원격 사용자 화면에 노출하지 않는다.

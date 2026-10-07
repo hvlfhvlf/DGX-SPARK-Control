@@ -5,7 +5,7 @@ Read README.md, docs/ARCHITECTURE.md, docs/MODELS.md, docs/UPDATES.md and the cu
 ## Invariants
 
 1. Keep the installed Spark server below **512,000,000 bytes** for the whole dashboard cgroup. Do not remove the 480 MiB hard limit. Target normal use well below 200 MiB. Measure before claiming low overhead.
-2. One process by default, Python standard library, on-demand cached collection. No Redis, Prometheus, Grafana, agent daemon, package installation or heavyweight framework without a demonstrated need.
+2. The server uses one process and Python standard library with on-demand cached collection. An optional GTK desktop tray has no metric polling. Put both in dgx-spark-control.slice, capped at 480 MiB combined. No heavyweight monitoring stack.
 3. Never report fixture values as live data. The original public prototype is independent. `web/runtime.js` owns the installed runtime. Unavailable fields are null / `—`, not zero. Reset rate baselines after gaps or counter resets.
 4. Keep minimum two-column telemetry on phones, fixed card dimensions, tabular numbers, left main reading/right clock, 0.2s hover, 0.3s detail entry/0.2s exit and reduced-motion support.
 5. `DGX_SPARK` is the fresh-install display-name default; changing it does not rename the OS host. Server name is shared, theme/language are browser preferences.
@@ -14,6 +14,8 @@ Read README.md, docs/ARCHITECTURE.md, docs/MODELS.md, docs/UPDATES.md and the cu
 8. Before a release update VERSION, CHANGELOG.md and docs/releases/<version>.md. Keep an exact test/validation record, package, checksum, immutable Git tag and GitHub Release aligned.
 9. Update the project's Notion release record with the same version, source commit, docs links, evidence and limitations. If Notion is inaccessible, say so; do not call the release documentation complete.
 10. Exclude local tokens, real paths/registries, logs, benchmark prompts, SSH configuration and unrelated media from source and releases.
+11. Device logins have no fixed expiry, by explicit owner preference. Keep them across browser close, server restart and update; revoke on logout/password reset. Persist bounded session hashes, never passwords or raw session tokens. Local OS account access permits password recovery without knowing the old password.
+12. Never hardcode 128 GB, GB10 or 20 cores in the installed UI. Hardware identity comes from the authenticated API; distinguish installed firmware RAM from OS-usable MemTotal. Missing firmware must not be rounded into a guessed marketed capacity.
 
 ## Verification
 
