@@ -11,6 +11,8 @@ Requires Linux, Python **3.12+**, a user systemd session, and an NVIDIA driver f
 Download `DGX-SPARK-Control-0.1.0.tar.gz` and `SHA256SUMS` from [Releases](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases), verify the checksum, extract into an empty directory, and run:
 
 ```bash
+curl -fLO https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/download/v0.1.0/DGX-SPARK-Control-0.1.0.tar.gz
+curl -fLO https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/download/v0.1.0/SHA256SUMS
 sha256sum -c SHA256SUMS
 mkdir dgx-spark-control-install
 tar -xzf DGX-SPARK-Control-0.1.0.tar.gz -C dgx-spark-control-install

@@ -12,7 +12,7 @@ app="$HOME/.local/share/dgx-spark-control-app"
 data="$HOME/.local/share/dgx-spark-control"
 mkdir -p "$app/releases" "$data/backups" "$HOME/.config/systemd/user"
 chmod 700 "$data"
-stamp=$(date +%Y%m%d-%H%M%S)
+stamp=$(date +%Y%m%d-%H%M%S-%N)
 if [[ -f "$data/config.json" ]]; then cp -p "$data/config.json" "$data/backups/config-$stamp.json"; fi
 stage=$(mktemp -d "$app/releases/.stage-XXXXXX")
 cp -R "$source_dir/spark_control" "$source_dir/web" "$source_dir/scripts" "$source_dir/docs" "$stage/"

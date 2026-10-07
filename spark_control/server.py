@@ -4,6 +4,7 @@ import hmac
 import json
 import mimetypes
 import os
+import subprocess
 import threading
 import time
 from collections import deque
@@ -138,7 +139,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply(404, {"error": "Unknown API"})
         except (ValueError, TypeError, AttributeError):
             self.reply(400, {"error": "Invalid request or operation unavailable"})
-        except OSError:
+        except (OSError, subprocess.TimeoutExpired):
             self.reply(503, {"error": "Could not persist settings or access service"})
 
 

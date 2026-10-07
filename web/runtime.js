@@ -4,17 +4,19 @@ const liveNode={sample:null,history:[],models:[],events:[],connected:false,busy:
 const tr=(en,ko)=>uiLanguage==='ko'?ko:en;
 const fmt=(v,places=1)=>v==null?'—':Number(v).toFixed(places);
 async function api(path,body){
- const response=await fetch('/api/'+path,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+liveNode.token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(10000)});
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);
+ let response;try{response=await fetch('/api/'+path,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+liveNode.token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,signal:controller.signal});}finally{clearTimeout(timeout);}
  if(response.status===401){liveNode.token='';sessionStorage.removeItem('spark.access');throw Error(tr('Access token required','접속 토큰이 필요합니다'));}
  const value=await response.json();if(!response.ok)throw Error(value.error||'Request failed');return value;
 }
 function graph(id,channel=0,height=64){
  const rows=liveNode.history.filter(row=>row.timestamp>Date.now()/1000-((metricExplorer?.range||5)*60));
  const value=row=>Array.isArray(row[id])?row[id][channel]:row[id];
- const maximum=Math.max(1,...rows.map(row=>value(row)||0))*1.12;
+ const maximum=Math.max(0.01,...rows.flatMap(row=>Array.isArray(row[id])?row[id]:[row[id]]).map(v=>v||0))*1.12;
+ const end=Date.now()/1000,start=end-(metricExplorer?.range||5)*60;
  let paths='',segment=[];
  const flush=()=>{if(segment.length>1)paths+=`<polyline class="io-trace trace-${channel}" points="${segment.join(' ')}"/>`;segment=[];};
- rows.forEach((row,i)=>{if(value(row)==null||(i&&row.timestamp-rows[i-1].timestamp>15))flush();if(value(row)!=null)segment.push(`${(i/Math.max(1,rows.length-1)*240).toFixed(1)},${(height-4-value(row)/maximum*(height-8)).toFixed(1)}`);});flush();
+ rows.forEach((row,i)=>{if(value(row)==null||(i&&row.timestamp-rows[i-1].timestamp>15))flush();if(value(row)!=null)segment.push(`${((row.timestamp-start)/(end-start)*240).toFixed(1)},${(height-4-value(row)/maximum*(height-8)).toFixed(1)}`);});flush();
  return paths;
 }
 function livePlot(id){return `<svg viewBox="0 0 240 64" preserveAspectRatio="none" aria-label="${escapeHTML(id)}"><path class="io-grid" d="M0 16H240M0 40H240M0 63H240"/>${graph(id)}${['network','diskio'].includes(id)?graph(id,1):''}</svg>`;}
@@ -43,6 +45,7 @@ render=function(animate=true){
   const personal=template.content.querySelector('.settings-primary > section');
   personal.querySelector('.spark-name-row p').textContent=tr('Shared display name saved on this Spark. The system hostname is unchanged.','이 Spark에 저장되는 공용 표시 이름입니다. 시스템 호스트명은 바뀌지 않습니다.');
   personal.querySelector('#resetPreferences').textContent=tr('RESET APPEARANCE','화면 설정 초기화');
+  personal.querySelector('#resetPreferences').previousElementSibling.querySelector('p').textContent=tr('Appearance is saved in this browser. The Spark name is shared across devices.','화면 설정은 이 브라우저에 저장됩니다. Spark 이름은 기기 간 공유됩니다.');
   html=pageHeading('SYSTEM SETTINGS','05','MAKE THIS SPACE YOURS.')+personal.outerHTML+`<section class="panel runtime-panel"><h2>DGX-SPARK-Control ${liveNode.version}</h2><p>${tr('One Python process · demand-driven 5s collection · 720 history samples · 480 MiB service limit.','Python 프로세스 1개 · 요청 시 5초 간격 수집 · 최대 이력 720개 · 서비스 상한 480 MiB.')}</p><div class="setting-row"><span>Interface motion</span>${switchInput('motionToggle',state.motion,'Interface motion')}</div><button class="button secondary" id="liveDiscover">${tr('SCAN MODEL FOLDERS','모델 폴더 검색')}</button><p id="discoveryResult"></p><p>${tr('Versioned updates: bash update.sh X.Y.Z · See docs/UPDATES.md.','버전 지정 업데이트: bash update.sh X.Y.Z · docs/UPDATES.md 참고.')}</p><button class="button secondary" id="liveLogout">${tr('DISCONNECT THIS TAB','이 탭 연결 해제')}</button></section>`;
  }else if(state.view==='logs')html=pageHeading('ACTIVITY LOG','04','CONTROL EVENTS')+`<section class="panel">${liveNode.events.map(e=>`<div class="compact-row">${new Date(e.timestamp*1000).toLocaleTimeString()} · ${escapeHTML(e.message)}</div>`).join('')||`<p class="empty-note">${tr('No control events this session.','이번 서버 실행 중 제어 기록이 없습니다.')}</p>`}</section>`;
  else html=pageHeading('WORKLOAD QUEUE','03','ENGINE INTEGRATION')+`<section class="panel"><p class="empty-note">${tr('Request tracking is not connected in 0.1. No simulated jobs are displayed.','0.1 버전은 요청 추적이 연결되지 않았습니다. 모의 작업은 표시하지 않습니다.')}</p></section>`;
@@ -67,8 +70,9 @@ async function refreshLive(){
  if(liveNode.busy||!liveNode.token||document.hidden)return;liveNode.busy=true;
  try{
   const [sample,settings,registered,events]=await Promise.all(['metrics','settings','models','events'].map(p=>api(p)));
-  liveNode.sample=sample;liveNode.history=await api('history');liveNode.models=registered;liveNode.events=events;liveNode.connected=true;preferences.sparkName=settings.spark_name;
-  if(state.view==='overview'&&document.querySelector('.metric-grid')){const template=document.createElement('template');template.innerHTML=installedOverview();document.querySelectorAll('[data-metric]').forEach(card=>{const next=template.content.querySelector('[data-metric="'+card.dataset.metric+'"]');if(next)card.innerHTML=next.innerHTML;});$('#connectionLabel').textContent='NODE ONLINE';$('#sparkDisplayName').textContent=preferences.sparkName;}else if(state.view!=='settings')render(false);else $('#sparkDisplayName').textContent=preferences.sparkName;
+  $('#runtimeVersion').textContent='V'+settings.version;
+  liveNode.sample=sample;liveNode.history=await api('history');liveNode.models=registered;liveNode.events=events;liveNode.connected=true;liveNode.version=settings.version;preferences.sparkName=settings.spark_name;$('#connectionLabel').textContent='NODE ONLINE';const nameInput=$('#sparkNameInput');if(nameInput&&!document.activeElement.closest('#sparkNameForm'))nameInput.value=settings.spark_name;
+  if(state.view==='overview'&&document.querySelector('.metric-grid')){const template=document.createElement('template');template.innerHTML=installedOverview();document.querySelectorAll('[data-metric]').forEach(card=>{const next=template.content.querySelector('[data-metric="'+card.dataset.metric+'"]');if(next)card.innerHTML=next.innerHTML;});document.querySelector('.section-head > span').textContent=tr('LIVE / 5 SEC','실측 / 5초');$('#connectionLabel').textContent='NODE ONLINE';$('#sparkDisplayName').textContent=preferences.sparkName;translateUI();}else if(state.view!=='settings')render(false);else $('#sparkDisplayName').textContent=preferences.sparkName;
   if(metricExplorer&&!$('#modal').hidden)renderMetricDetailBody();
  }catch(error){liveNode.connected=false;if(!liveNode.token||state.view!=='settings')render(false);const err=$('#liveLoginError');if(err)err.textContent=error.message;}
  finally{liveNode.busy=false;}
