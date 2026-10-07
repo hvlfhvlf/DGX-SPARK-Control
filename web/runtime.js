@@ -68,7 +68,7 @@ async function refreshLive(){
  try{
   const [sample,settings,registered,events]=await Promise.all(['metrics','settings','models','events'].map(p=>api(p)));
   liveNode.sample=sample;liveNode.history=await api('history');liveNode.models=registered;liveNode.events=events;liveNode.connected=true;preferences.sparkName=settings.spark_name;
-  if(state.view!=='settings')render(false);else $('#sparkDisplayName').textContent=preferences.sparkName;
+  if(state.view==='overview'&&document.querySelector('.metric-grid')){const template=document.createElement('template');template.innerHTML=installedOverview();document.querySelectorAll('[data-metric]').forEach(card=>{const next=template.content.querySelector('[data-metric="'+card.dataset.metric+'"]');if(next)card.innerHTML=next.innerHTML;});$('#connectionLabel').textContent='NODE ONLINE';$('#sparkDisplayName').textContent=preferences.sparkName;}else if(state.view!=='settings')render(false);else $('#sparkDisplayName').textContent=preferences.sparkName;
   if(metricExplorer&&!$('#modal').hidden)renderMetricDetailBody();
  }catch(error){liveNode.connected=false;if(!liveNode.token||state.view!=='settings')render(false);const err=$('#liveLoginError');if(err)err.textContent=error.message;}
  finally{liveNode.busy=false;}
@@ -82,6 +82,7 @@ document.addEventListener('click',async event=>{
  if(b.dataset.liveModel){event.stopImmediatePropagation();showModal(`<h2 id="modalTitle">${b.dataset.liveAction==='stop'?'STOP':'START'} SERVICE?</h2><p>${escapeHTML(b.dataset.liveModel)}</p><p>${tr('This controls the real registered service. Stopping interrupts its active requests.','실제 등록된 서비스를 제어합니다. 정지하면 해당 서비스의 진행 중 요청이 중단됩니다.')}</p><button class="button" data-live-confirm="${escapeHTML(b.dataset.liveModel)}" data-live-operation="${b.dataset.liveAction}">CONFIRM</button>`);}
  if(b.dataset.liveConfirm){event.stopImmediatePropagation();b.disabled=true;try{await api('models/action',{id:b.dataset.liveConfirm,action:b.dataset.liveOperation});closeModal();await refreshLive();}catch(error){b.disabled=false;toast(error.message);}}
  if(b.id==='liveDiscover'){event.stopImmediatePropagation();b.disabled=true;try{const result=await api('models/discover',{});$('#discoveryResult').textContent=result.roots_configured?JSON.stringify(result):tr('Configure model_roots in config.json first.','먼저 config.json에 model_roots를 등록하세요.');}catch(error){toast(error.message);}finally{b.disabled=false;}}
+ if(b.dataset.language)queueMicrotask(()=>render(false));
  if(b.id==='liveLogout'){event.stopImmediatePropagation();liveNode.token='';liveNode.connected=false;sessionStorage.removeItem('spark.access');render();}
  if(b.id==='resetPreferences'){event.stopImmediatePropagation();const name=preferences.sparkName;preferences={...preferenceDefaults,sparkName:name};savePreferences();setMotion(preferences.motion);render(false);}
 },true);
