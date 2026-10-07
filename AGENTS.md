@@ -16,6 +16,7 @@ Read README.md, docs/ARCHITECTURE.md, docs/MODELS.md, docs/UPDATES.md and the cu
 10. Exclude local tokens, real paths/registries, logs, benchmark prompts, SSH configuration and unrelated media from source and releases.
 11. Device logins have no fixed expiry, by explicit owner preference. Keep them across browser close, server restart and update; revoke on logout/password reset. Persist bounded session hashes, never passwords or raw session tokens. Local OS account access permits password recovery without knowing the old password.
 12. Never hardcode 128 GB, GB10 or 20 cores in the installed UI. Hardware identity comes from the authenticated API; distinguish installed firmware RAM from OS-usable MemTotal. Missing firmware must not be rounded into a guessed marketed capacity.
+13. Render decorative arrows with inline SVG, not Unicode arrows that can become emoji on iOS. Keep icon geometry, currentColor, accessibility and sizing consistent. Keep docs/GUIDE.ko.md and docs/GUIDE.en.md aligned when user-facing behavior changes.
 
 ## Verification
 

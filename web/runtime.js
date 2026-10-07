@@ -1,6 +1,6 @@
 'use strict';
 // Installed runtime. The original UI is retained; simulated telemetry never runs here.
-const liveNode={sample:null,history:[],models:[],events:[],hardware:null,connected:false,busy:false,version:'0.1.1',authMode:'password',token:localStorage.getItem('spark.access')||sessionStorage.getItem('spark.access')||''};
+const liveNode={sample:null,history:[],models:[],events:[],hardware:null,connected:false,busy:false,version:'0.1.2',authMode:'password',token:localStorage.getItem('spark.access')||sessionStorage.getItem('spark.access')||''};
 const tr=(en,ko)=>uiLanguage==='ko'?ko:en;
 const fmt=(v,places=1)=>v==null?'—':Number(v).toFixed(places);
 function hardwareLabels(){
@@ -27,11 +27,11 @@ function graph(id,channel=0,height=64){
 function livePlot(id){return `<svg viewBox="0 0 240 64" preserveAspectRatio="none" aria-label="${escapeHTML(id)}"><path class="io-grid" d="M0 16H240M0 40H240M0 63H240"/>${graph(id)}${['network','diskio'].includes(id)?graph(id,1):''}</svg>`;}
 function liveCard(id,label,unit){
  const s=liveNode.sample||{},value=liveNode.connected?s[id]:null;
- if(['network','diskio'].includes(id))return `<button class="metric io-metric" data-metric="${id}"><span class="metric-top">${label}<span>↗</span></span><div class="io-chart">${livePlot(id)}</div><div class="io-axis"><span>5m</span><span>NOW</span></div><div class="metric-pair">${(id==='network'?['RECEIVE','SEND']:['READ','WRITE']).map((name,c)=>`<div><span class="io-label"><i class="io-dot trace-${c}"></i>${name}</span><strong>${fmt(value?.[c])}<small> MB/s</small></strong></div>`).join('')}</div></button>`;
+ if(['network','diskio'].includes(id))return `<button class="metric io-metric" data-metric="${id}"><span class="metric-top">${label}<span class="metric-arrow">${arrowIcon()}</span></span><div class="io-chart">${livePlot(id)}</div><div class="io-axis"><span>5m</span><span>NOW</span></div><div class="metric-pair">${(id==='network'?['RECEIVE','SEND']:['READ','WRITE']).map((name,c)=>`<div><span class="io-label"><i class="io-dot trace-${c}"></i>${name}</span><strong>${fmt(value?.[c])}<small> MB/s</small></strong></div>`).join('')}</div></button>`;
  const extra=id==='gpu'?`${fmt(s.gpu_clock_mhz==null?null:s.gpu_clock_mhz/1000,2)} GHz`:id==='cpu'?`${s.cpu_clock_ghz?s.cpu_clock_ghz.map(v=>fmt(v,2)).join('–'):'—'} GHz`:id==='memory'?`${fmt(s.memory_clock_mhz==null?null:s.memory_clock_mhz/1000,2)} GHz`:'';
  const foot=id==='memory'?`${fmt(s.memory_total_gib)} GiB`:id==='disk'?`${fmt(s.disk_total_tib)} TiB`:id==='cpu'?`${Object.keys(s.cores||{}).length} CORES`:id==='power'?'GPU ONLY':id==='temp'?'GPU SENSOR':'NVML';
  const percentage=id==='memory'?value/s.memory_total_gib*100:id==='disk'?value/s.disk_total_tib*100:value;
- return `<button class="metric ${id==='temp'?'warm':''}" data-metric="${id}"><span class="metric-top">${label}<span>↗</span></span><div class="metric-reading"><div class="metric-number">${fmt(value,['gpu','cpu','temp'].includes(id)?0:1)}<small>${unit}</small></div>${extra?`<div class="metric-extra">${extra}</div>`:''}</div><div class="metric-foot"><span>${tr('LIVE SENSOR','실측 센서')}</span><span>${foot}</span></div>${id!=='power'?`<div class="metric-line"><span style="width:${Math.min(100,Math.max(0,percentage||0))}%"></span></div>`:'<div class="metric-rule"></div>'}</button>`;
+ return `<button class="metric ${id==='temp'?'warm':''}" data-metric="${id}"><span class="metric-top">${label}<span class="metric-arrow">${arrowIcon()}</span></span><div class="metric-reading"><div class="metric-number">${fmt(value,['gpu','cpu','temp'].includes(id)?0:1)}<small>${unit}</small></div>${extra?`<div class="metric-extra">${extra}</div>`:''}</div><div class="metric-foot"><span>${tr('LIVE SENSOR','실측 센서')}</span><span>${foot}</span></div>${id!=='power'?`<div class="metric-line"><span style="width:${Math.min(100,Math.max(0,percentage||0))}%"></span></div>`:'<div class="metric-rule"></div>'}</button>`;
 }
 function installedOverview(){
  const h=hardwareLabels(),template=document.createElement('template');template.innerHTML=deviceArt();

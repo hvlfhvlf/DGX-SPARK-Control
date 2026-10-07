@@ -26,6 +26,7 @@ Server + tray → dgx-spark-control.slice (combined 480 MiB limit)
 - `sessions.py`: 최대 32개 세션의 해시를 원자적으로 저장. 고정 만료 없음. 비밀번호 기록의 fingerprint가 바뀌면 기존 세션 무효화.
 - `tray.py`: 선택적 GTK/AppIndicator 데스크톱 메뉴. 정기 수집 없음, 로컬 OS 사용자 권한으로 비밀번호 복구 가능.
 - `web/runtime.js`: 실측 운영 UI. 서버 데이터와 브라우저 개인화를 구분한다.
+- UI 화살표는 `web/app.js`의 `arrowIcon()`과 정적 헤더의 같은 SVG path를 사용한다. `currentColor`로 기존 색/호버를 따르고 장식 아이콘은 `aria-hidden`으로 처리한다. 도식 크기 규칙은 `.hero-art > svg`에만 적용하여 라벨 아이콘에 전파하지 않는다. 문자는 OS 이모지로 대체될 수 있으므로 화살표 아이콘에 쓰지 않는다.
 - `web/app.js`, `metric-details.js`: 기존 디자인 기반·모달 모션. 모의 갱신은 설치판에서 비활성화한다. 후속 버전에서 순수 UI 모듈로 분리할 수 있다.
 - `install.sh`, `update.sh`, `scripts/rollback.sh`: 배포·버전 변경. 사용자 데이터는 코드 밖에 저장.
 
@@ -44,7 +45,7 @@ Server + tray → dgx-spark-control.slice (combined 480 MiB limit)
 
 ## API
 
-공개 GET `/api/info`: 버전·live 모드·인증 필요 여부만 제공한다. 그 외 `/api/*`는 `Authorization: Bearer <token>` 필요.
+공개 GET `/api/info`: 버전·live 모드·인증 필요 여부만 제공한다. POST `/api/login`은 비밀번호를 검증하여 세션을 발급한다. 나머지 `/api/*`는 `Authorization: Bearer <token>`이 필요하다.
 
 | Endpoint | 동작 |
 |---|---|

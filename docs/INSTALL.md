@@ -1,4 +1,6 @@
-# 설치 / Installation — 0.1.1
+# 설치 / Installation — 0.1.2
+
+전체 사용자 가이드: [한국어](GUIDE.ko.md) · [English](GUIDE.en.md)
 
 ## 지원 범위
 

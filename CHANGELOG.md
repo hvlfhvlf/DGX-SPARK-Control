@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2 — 2026-10-08
+
+- Replace diagonal text arrows with inline SVG in the brand, schematic, telemetry cards and shared UI actions, preventing platform emoji substitution while retaining the existing visual style.
+- Scope schematic SVG sizing to the illustration, keeping inline label icons at text size on phones.
+- Publish separate Korean and English installation/usage/recovery/update guides, linked from the repository README and included in the release package.
+- Keep the existing Tailscale address, display name, authentication policy, model services and server dependencies unchanged.
+
 ## 0.1.1 — 2026-10-08
 
 - Replace fixed hardware labels with detected GPU, architecture, CPU count and installed/OS RAM capacity. Validate 64/128/256 GiB fixtures.
