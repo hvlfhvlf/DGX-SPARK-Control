@@ -8,7 +8,7 @@ from pathlib import Path
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 try:
     gi.require_version('AyatanaAppIndicator3', '0.1')
     from gi.repository import AyatanaAppIndicator3 as Indicator
@@ -17,6 +17,7 @@ except ValueError:
     from gi.repository import AppIndicator3 as Indicator
 
 from .config import Config
+from .desktop import connection, open_url, launch, RELEASES, LOCAL_URL
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = Path.home()/'.local/share/dgx-spark-control'
@@ -48,6 +49,9 @@ class Tray:
         self.menu = Gtk.Menu()
         self.add('DGX-SPARK-Control · '+(ROOT/'VERSION').read_text().strip(), None)
         self.add('Open dashboard / 대시보드 열기', self.open_dashboard)
+        self.add('Copy connection address / 접속 주소 복사', self.copy_address)
+        self.add('Setup / 초기 설정', self.open_setup)
+        self.add('Check for updates / 업데이트 확인', lambda *_: open_url(RELEASES))
         self.add('Change Spark name / 이름 변경', lambda *_: self.edit(False))
         self.add('Reset password / 비밀번호 재설정', lambda *_: self.edit(True))
         self.menu.append(Gtk.SeparatorMenuItem())
@@ -78,6 +82,19 @@ class Tray:
         # A desktop browser is separate from the bounded monitoring/tray service.
         subprocess.Popen(['systemd-run', '--user', '--collect', '--unit=dgx-dashboard-browser-'+uuid.uuid4().hex[:8], '/usr/bin/xdg-open', 'http://127.0.0.1:8767'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+    def copy_address(self, *_):
+        result = connection()
+        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        clipboard.set_text(result['url'] or LOCAL_URL, -1)
+        clipboard.store()
+        self.message(('Tailscale address copied / Tailscale 주소 복사 완료' if result['url'] else 'Local address copied. Set up Tailscale for other devices. / 로컬 주소를 복사했습니다. 다른 기기에서는 Tailscale 설정이 필요합니다.'))
+
+    def open_setup(self, *_):
+        if (DATA/'package-managed').exists():
+            launch(['/usr/bin/dgx-spark-control', 'setup'])
+        else:
+            launch(['/usr/bin/python3', str(ROOT/'scripts/open-setup.py')])
+
     def server_action(self, action):
         try:
             service(action)
@@ -87,7 +104,7 @@ class Tray:
 
     def status(self, *_):
         result = subprocess.run(['systemctl', '--user', 'is-active', SERVICE], capture_output=True, text=True, timeout=3)
-        self.message('DGX-SPARK-Control\n'+Config(DATA).value['spark_name']+'\nServer: '+result.stdout.strip()+'\nhttp://127.0.0.1:8767\n\nLocal desktop control. No telemetry polling in the tray.')
+        self.message('DGX-SPARK-Control\n'+Config(DATA).value['spark_name']+'\nServer / 서버: '+result.stdout.strip()+'\n'+LOCAL_URL+'\n'+(connection()['url'] or 'Tailscale: setup required / 연결 설정 필요')+'\n\nLocal desktop control. No telemetry polling in the tray.\n로컬 데스크톱 제어. 트레이는 지표를 주기적으로 수집하지 않습니다.')
 
     def edit(self, password):
         dialog = Gtk.Dialog(title='Reset password / 비밀번호 재설정' if password else 'Spark name / Spark 이름')

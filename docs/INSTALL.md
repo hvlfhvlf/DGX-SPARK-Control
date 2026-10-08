@@ -1,64 +1,45 @@
-# 설치 / Installation — 0.1.2
+# Technical installation / 기술 설치 안내 — 0.2.0
 
-전체 사용자 가이드: [한국어](GUIDE.ko.md) · [English](GUIDE.en.md)
+Start with [한국어 간편 설치](QUICKSTART.ko.md) or [English quick start](QUICKSTART.en.md).
 
-## 지원 범위
+Target: NVIDIA DGX Spark, Ubuntu 24.04 ARM64, Python 3.12+, user systemd and cgroup v2. Other platforms are on hold.
 
-- NVIDIA DGX Spark, Ubuntu 24.04, ARM64, Python 3.12+, user systemd, cgroup v2.
-- 기타 Linux는 CPU/메모리 읽기가 가능할 수 있으나 검증 대상과 구분한다. Windows는 서버 설치 대상이 아니다.
-- 기존 모델, CUDA, 드라이버, Docker, Tailscale 설치를 변경하지 않는다. 기본 포트 8767.
+## File ownership
 
-## 설치
-
-README의 GitHub Release 다운로드 → SHA256 확인 → 빈 디렉터리 압축 해제 → `bash install.sh` 순서로 진행한다. 일반 사용자 계정으로 실행하며 sudo 설치를 요구하지 않는다.
-
-파일 배치:
-
-| 위치 | 역할 |
+| Path | Owner and role |
 |---|---|
-| `~/.local/share/dgx-spark-control-app/releases/` | 버전별 실행 코드 |
-| `~/.local/share/dgx-spark-control-app/current` | 현재 실행 버전 링크 |
-| `~/.local/share/dgx-spark-control-app/previous` | 이전 버전 링크 |
-| `~/.local/share/dgx-spark-control/config.json` | 이름·모델 등록·검색 경로 |
-| `~/.local/share/dgx-spark-control/access-token` | 비공개 접속 토큰, 0600 |
-| `~/.local/share/dgx-spark-control/password.json` | 비밀번호 해시와 salt, 0600 |
-| `~/.local/share/dgx-spark-control/sessions.json` | 최대 32개 기기 세션 해시, 0600 |
-| `~/.local/share/dgx-spark-control/hardware.json` | 설치 시 감지한 펌웨어 메모리 용량 |
-| `~/.config/systemd/user/dgx-spark-control.service` | 서버 자동 실행·자원 한도 |
+| `/usr/lib/dgx-spark-control` | dpkg-owned code, docs and assets |
+| `/usr/bin/dgx-spark-control` | package launcher |
+| `/usr/share/applications/dgx-spark-control.desktop` | initial setup application |
+| `~/.local/share/dgx-spark-control` | private user settings, authentication and backups |
+| `~/.local/share/dgx-spark-control/package-managed` | user opted into package services |
+| `~/.local/share/dgx-spark-control-app/current` | alias to package code after migration |
+| `~/.local/share/dgx-spark-control-app/previous` | preserved archive code for migration recovery |
+| `~/.config/systemd/user/dgx-spark-control.*` | bounded dashboard user units |
+| `~/.config/autostart/dgx-spark-control-tray.desktop` | tray after desktop login |
 
-## 접속
+Install the `.deb` with an administrator, then run setup as the desktop user. Package maintainer scripts never prompt for a web password. Fresh setup saves the password before activation. Existing-password noninteractive setup preserves auth data. The installer does not enable Tailscale Serve/Funnel or lingering itself; instructions are shown only as needed.
 
-대화형 설치 시 비밀번호를 두 번 입력한다. Spark 브라우저에서 http://127.0.0.1:8767 접속 후 비밀번호로 로그인한다. 비밀번호가 설정되지 않은 비대화형 설치만 기존 access-token 로그인을 사용한다. 로그인 세션은 이 브라우저의 localStorage와 서버의 세션 해시로 유지하며 기간 제한이 없다. 서버 재시작/업데이트, 브라우저 종료 후에도 유지한다. 직접 로그아웃·비밀번호 재설정·브라우저 데이터 삭제 시 해제된다. 최대 32개 세션을 넘으면 가장 오래 발급된 세션을 제거한다.
+## Archive alternative
 
-비밀번호를 잊으면 Spark 로컬 트레이 또는 `python3 ~/.local/share/dgx-spark-control-app/current/scripts/set-password.py`로 새 값을 설정하고 서버를 재시작한다. 이전 비밀번호는 요구하지 않는다. 원격 웹의 인증 우회 복구는 제공하지 않는다. [데스크톱 가이드](DESKTOP.md).
+Download `DGX-SPARK-Control-0.2.0.tar.gz` and `SHA256SUMS` from the release. Verify only the archive's checksum line if you did not download the `.deb`:
 
-GPU/CPU/메모리 정보는 자동 감지한다. 설치 시 이미 사용 가능한 권한으로 dmidecode type 17 읽기를 한 번 시도한다(sudo -n만 사용, 권한 요청 없음). 실패하면 /proc/meminfo의 OS 가용 총량을 명시적으로 표시한다. 시리얼 번호와 전체 DMI 출력은 저장하지 않는다.
+```bash
+grep '  DGX-SPARK-Control-0.2.0.tar.gz$' SHA256SUMS | sha256sum -c -
+mkdir app
+tar -xzf DGX-SPARK-Control-0.2.0.tar.gz -C app
+cd app
+python3 -m spark_control.setup --cli --lang en
+```
 
-다른 기기에서 SSH 포워딩:
+Use `--lang ko` for Korean. Run as your normal user, not root. Archives need their Python/systemd dependencies present; optional GTK/tray dependencies are documented in [Desktop](DESKTOP.md). Existing archive updates still support `bash install.sh` when the private password already exists. Fresh noninteractive installs fail closed with exit code 2.
+
+Use Tailscale HTTPS or SSH forwarding for other devices:
 
 ```bash
 ssh -N -L 8767:127.0.0.1:8767 USER@SPARK_TAILSCALE_NAME
 ```
 
-그 기기에서 http://127.0.0.1:8767을 연다.
+The browser on that client can then use `http://127.0.0.1:8767`. Keep the server bound to localhost. Do not publish the live control panel to the prototype hosting site.
 
-Tailscale HTTPS 사용 시 먼저 `tailscale serve status`로 기존 라우팅을 확인한다. 이미 사용 중인 Serve 포트/경로를 덮어쓰지 않는다. 예를 들어 비어 있는 8443 포트에:
-
-```bash
-tailscale serve --bg --https=8443 http://127.0.0.1:8767
-tailscale serve status
-```
-
-출력된 실제 HTTPS 주소를 사용한다. 필요한 경우 관리자가 해당 명령을 승인한다. **Funnel/public exposure는 설정하지 않는다.** Tailscale 접근 제어와 대시보드 토큰을 함께 사용한다. 실제 모델 제어판을 공개 디자인 미리보기 호스팅에 배포하지 않는다.
-
-재부팅 후 로그인 없이 실행하려면 기존 `loginctl show-user "$USER" -p Linger`를 확인하고, 필요할 때 관리자가 `sudo loginctl enable-linger "$USER"`를 실행한다. 설치 프로그램은 이 시스템 설정을 임의 변경하지 않는다.
-
-## 상태·중지·제거
-
-```bash
-systemctl --user status dgx-spark-control
-journalctl --user -u dgx-spark-control -n 50
-systemctl --user stop dgx-spark-control
-```
-
-제거는 먼저 `systemctl --user disable --now dgx-spark-control`로 중단한 뒤 앱 디렉터리와 unit 파일만 제거한다. 개인 설정과 토큰 디렉터리는 보존한다. Tailscale Serve를 추가했다면 해당 포트만 해제한다. 다른 Serve 설정과 모델 서비스는 건드리지 않는다.
+[Update, migration and removal](UPDATES.md) · [한국어 사용자 가이드](GUIDE.ko.md) · [English user guide](GUIDE.en.md)

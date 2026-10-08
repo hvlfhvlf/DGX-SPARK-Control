@@ -17,6 +17,7 @@ Read README.md, docs/ARCHITECTURE.md, docs/MODELS.md, docs/UPDATES.md and the cu
 11. Device logins have no fixed expiry, by explicit owner preference. Keep them across browser close, server restart and update; revoke on logout/password reset. Persist bounded session hashes, never passwords or raw session tokens. Local OS account access permits password recovery without knowing the old password.
 12. Never hardcode 128 GB, GB10 or 20 cores in the installed UI. Hardware identity comes from the authenticated API; distinguish installed firmware RAM from OS-usable MemTotal. Missing firmware must not be rounded into a guessed marketed capacity.
 13. Render decorative arrows with inline SVG, not Unicode arrows that can become emoji on iOS. Keep icon geometry, currentColor, accessibility and sizing consistent. Keep docs/GUIDE.ko.md and docs/GUIDE.en.md aligned when user-facing behavior changes.
+14. 0.2 packages own code under /usr/lib/dgx-spark-control. Setup runs as the user; maintainer scripts never ask for credentials. Fresh activation requires a password. Do not mix archive updates with package-managed installs or erase private data on removal. Keep both QUICKSTART languages aligned. Other-platform expansion is on hold.
 
 ## Verification
 

@@ -10,6 +10,14 @@ version=$(tr -d '\r\n' < "$source_dir/VERSION")
 [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Invalid version'; exit 1; }
 app="$HOME/.local/share/dgx-spark-control-app"
 data="$HOME/.local/share/dgx-spark-control"
+if [[ -f "$data/package-managed" ]]; then
+  echo 'This installation is managed by .deb. Install the new .deb with apt. / 패키지 설치판은 새 .deb로 업데이트하세요.' >&2
+  exit 1
+fi
+if [[ ! -f "$data/password.json" && ! -t 0 ]]; then
+  echo 'Initial password required. Run python3 -m spark_control.setup --cli in an interactive terminal. / 대화형 초기 설정이 필요합니다.' >&2
+  exit 2
+fi
 mkdir -p "$app/releases" "$data/backups" "$HOME/.config/systemd/user"
 chmod 700 "$data"
 stamp=$(date +%Y%m%d-%H%M%S-%N)

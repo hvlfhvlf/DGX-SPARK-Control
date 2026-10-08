@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 — 2026-10-08
+
+- Add an Ubuntu ARM64 `.deb`, application-menu setup launcher, and four-step Korean/English GTK wizard.
+- Detect existing passwords and preserve remembered device sessions during archive-to-package migration; require a confirmed password before activating fresh installs.
+- Add read-only JSON checks, interactive CLI setup and existing-password-only noninteractive activation for SSH/LLM workflows.
+- Keep code owned by dpkg and private user data outside it. Refresh active managed users after package updates, retain old archive code and back up units/settings before migration.
+- Add tray actions for copying the detected Tailscale address, reopening setup and opening GitHub Releases. No additional polling or resident installer.
+- Publish parallel Korean/English quick-start and user guides, with explicit Tailscale, permissions, startup, recovery, update and removal instructions.
+- Keep other-platform expansion on hold; preserve the 480 MiB server/tray cap and existing model services.
+
 ## 0.1.2 — 2026-10-08
 
 - Replace diagonal text arrows with inline SVG in the brand, schematic, telemetry cards and shared UI actions, preventing platform emoji substitution while retaining the existing visual style.

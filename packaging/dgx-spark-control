@@ -1,0 +1,34 @@
+#!/usr/bin/python3
+"""Stable package entry point. Only dispatch fixed local actions."""
+import os
+import runpy
+import subprocess
+import sys
+from pathlib import Path
+
+root = Path('/usr/lib/dgx-spark-control')
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(root))
+action = sys.argv[1] if len(sys.argv) > 1 else 'setup'
+sys.argv = [sys.argv[0], *sys.argv[2:]]
+if action in ('setup', 'server', 'tray'):
+    runpy.run_module('spark_control.'+action, run_name='__main__')
+elif action == 'start-tray':
+    subprocess.run(['systemctl', '--user', 'import-environment', 'DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'XDG_CURRENT_DESKTOP'], capture_output=True)
+    if (Path.home()/'.local/share/dgx-spark-control/package-managed').exists():
+        sys.exit(subprocess.call(['systemctl', '--user', 'start', 'dgx-spark-control-tray.service']))
+elif action in ('refresh', 'remove'):
+    from spark_control.setup import state, activate, UNITS, DATA_REL
+    if state()['managed']:
+        if action == 'refresh':
+            activate()
+        else:
+            subprocess.run(['systemctl', '--user', 'disable', '--now', UNITS[0]], capture_output=True)
+            subprocess.run(['systemctl', '--user', 'stop', UNITS[1]], capture_output=True)
+            for name in UNITS:
+                (Path.home()/'.config/systemd/user'/name).unlink(missing_ok=True)
+            (Path.home()/'.config/autostart/dgx-spark-control-tray.desktop').unlink(missing_ok=True)
+            (Path.home()/DATA_REL/'package-managed').unlink(missing_ok=True)
+            subprocess.run(['systemctl', '--user', 'daemon-reload'], capture_output=True)
+else:
+    raise SystemExit('Usage: dgx-spark-control [setup [--cli|--check|--non-interactive] | start-tray]')

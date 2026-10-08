@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
-version="${1:-0.1.2}"
+if [[ -f "$HOME/.local/share/dgx-spark-control/package-managed" ]]; then
+  echo 'Managed by .deb: download the new package and install with apt. / 새 .deb 패키지로 업데이트하세요.' >&2
+  exit 1
+fi
+version="${1:-0.2.0}"
 [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Usage: bash update.sh X.Y.Z'; exit 1; }
 temp=$(mktemp -d)
 trap 'rm -rf -- "$temp"' EXIT

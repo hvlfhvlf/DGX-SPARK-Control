@@ -9,7 +9,7 @@ output = root / 'dist'
 output.mkdir(exist_ok=True)
 name = f'DGX-SPARK-Control-{version}.tar.gz'
 with tarfile.open(output / name, 'w:gz') as tar:
-    for item in ['spark_control', 'web', 'scripts', 'docs', 'tests', 'install.sh', 'update.sh', 'VERSION', 'README.md', 'CHANGELOG.md', 'AGENTS.md']:
+    for item in ['spark_control', 'web', 'scripts', 'docs', 'tests', 'packaging', 'install.sh', 'update.sh', 'VERSION', 'README.md', 'CHANGELOG.md', 'AGENTS.md']:
         path = root / item
         for file in sorted(path.rglob('*')) if path.is_dir() else [path]:
             if file.is_file() and '__pycache__' not in file.parts and file.suffix != '.pyc':

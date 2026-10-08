@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ -f "$HOME/.local/share/dgx-spark-control/package-managed" ]]; then
+  echo 'Managed by .deb: install a compatible earlier .deb with apt --allow-downgrades. / 호환되는 이전 .deb로 복구하세요.' >&2
+  exit 1
+fi
 app="$HOME/.local/share/dgx-spark-control-app"
 target=$(readlink "$app/previous")
 [[ -d $target && $target == "$app/releases/"* ]] || { echo 'No previous release'; exit 1; }

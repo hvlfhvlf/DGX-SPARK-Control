@@ -18,6 +18,13 @@ Server + tray → dgx-spark-control.slice (combined 480 MiB limit)
 
 ## 파일별 책임
 
+- 0.2: `.deb` owns `/usr/lib/dgx-spark-control`; `/usr/bin/dgx-spark-control` dispatches fixed actions. Private settings stay in the existing user directory. Setup saves a first password before activation; existing auth data is retained.
+- `setup.py`: read-only preflight/state, validation, user-unit migration with backups and authenticated version-aware health check; CLI and existing-password-only noninteractive mode.
+- `wizard.py`: transient GTK3 four-step setup with Korean/English dictionaries; no embedded browser or polling agent.
+- `desktop.py`: one-shot Tailscale dashboard-route detection and separate desktop launch helpers; never changes Serve/Funnel.
+- `packaging/session-maintenance.py`: dpkg hook refreshes only opted-in user managers as their own users; removal preserves private data. `scripts/build-deb.py` creates the ARM64 package without root.
+- Package updates use apt/dpkg; archive update/rollback scripts refuse package-managed installs. The current alias points to package code, previous retains the pre-migration archive. First-run GUI/CLI and checks are outside the monitoring slice and exit when done.
+
 - `spark_control/server.py`: 정적 웹, 인증, Origin 검증, bounded HTTP worker, API 라우팅.
 - `config.py`: config schema 1, 초기값 `DGX_SPARK`, 원자적 저장, 토큰 생성.
 - `metrics.py`: 5초 캐시, CPU delta, 공유 메모리, GPU NVML, 센서 식별자, 물리 NIC/디스크 I/O, deque 이력.
