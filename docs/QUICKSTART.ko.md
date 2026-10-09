@@ -1,17 +1,17 @@
 # DGX Spark 간편 설치 — 한국어
 
-**0.2.0 · Ubuntu 24.04 / ARM64** · [English](QUICKSTART.en.md)
+**0.2.1 · Ubuntu 24.04 / ARM64** · [English](QUICKSTART.en.md)
 
 ## 1. 설치 파일 받기
 
-[GitHub 릴리스](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.2.0)에서 **dgx-spark-control_0.2.0_arm64.deb**를 Spark에 다운로드하세요.
+[GitHub 릴리스](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.2.1)에서 **dgx-spark-control_0.2.1_arm64.deb**를 Spark에 다운로드하세요.
 
 파일을 열어 소프트웨어 설치 앱에서 **설치**를 누릅니다. 관리자 인증이 나올 수 있습니다. 필요한 GTK·트레이 패키지는 Ubuntu 저장소에서 설치됩니다. 인터넷 연결이 필요하며, 모델·CUDA·NVIDIA 드라이버는 교체하지 않습니다.
 
 파일을 열 설치 앱이 없거나 터미널을 선호하면 다운로드 폴더에서 실행하세요:
 
 ```bash
-sudo apt install ./dgx-spark-control_0.2.0_arm64.deb
+sudo apt install ./dgx-spark-control_0.2.1_arm64.deb
 ```
 
 `apt` 명령의 `./`를 포함하세요. 파일이 다른 폴더에 있다면 해당 폴더로 먼저 이동하세요. 아래 초기 설정은 **sudo 없이 일반 사용자로** 실행합니다.
@@ -111,4 +111,4 @@ systemctl --user show dgx-spark-control.slice -p MemoryCurrent -p MemoryMax
 
 서버+트레이 상한은 **480 MiB**입니다. 설치 창, 브라우저, 모델과 Tailscale의 메모리는 별도입니다. 이번 버전은 DGX Spark Ubuntu ARM64 대상이며 Windows·다른 플랫폼 확장은 보류합니다.
 
-[전체 사용자 가이드](GUIDE.ko.md) · [검증 기록과 한계](releases/0.2.0.md)
+[전체 사용자 가이드](GUIDE.ko.md) · [검증 기록과 한계](releases/0.2.1.md)

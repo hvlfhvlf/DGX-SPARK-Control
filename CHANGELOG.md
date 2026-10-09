@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 — 2026-10-09
+
+- Use bundled SUIT 2.0.5 Regular/SemiBold/Bold WOFF2 for Korean web UI, including labels, navigation, settings and detail dialogs.
+- Serve fonts from the Spark itself, without external font/CDN requests. Keep the upstream SIL OFL license and exact source attribution.
+- Preserve the Rajdhani numeric/English display style, the English Chakra Petch UI, and system-font fallbacks. Refresh the stylesheet cache key.
+- Keep the native GTK setup/tray typography unchanged; this release updates the browser dashboard only.
+
 ## 0.2.0 — 2026-10-08
 
 - Add an Ubuntu ARM64 `.deb`, application-menu setup launcher, and four-step Korean/English GTK wizard.

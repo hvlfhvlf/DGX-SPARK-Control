@@ -1,6 +1,6 @@
 # DGX-SPARK-Control user guide — English
 
-**0.2.0** · [한국어](GUIDE.ko.md) · [Easy installation](QUICKSTART.en.md)
+**0.2.1** · [한국어](GUIDE.ko.md) · [Easy installation](QUICKSTART.en.md)
 
 ## Installation and access
 
@@ -61,4 +61,10 @@ systemctl --user show dgx-spark-control.slice -p MemoryCurrent -p MemoryPeak -p 
 
 The server and tray share a 480 MiB limit with no swap. Browsers, models, setup and Tailscale are separate. There is no telemetry collection without client requests. Long-running inference impact requires a separate benchmark.
 
-For another LLM continuing development, read [AGENTS.md](../AGENTS.md), [Architecture](ARCHITECTURE.md), [Models](MODELS.md) and [Updates](UPDATES.md). Keep secrets out of public materials. [This release's validation](releases/0.2.0.md).
+For another LLM continuing development, read [AGENTS.md](../AGENTS.md), [Architecture](ARCHITECTURE.md), [Models](MODELS.md) and [Updates](UPDATES.md). Keep secrets out of public materials. [This release's validation](releases/0.2.1.md).
+
+## Korean web font / iPhone
+
+The Korean web UI uses SUIT 2.0.5. Regular (400), SemiBold (600) and Bold (700) WOFF2 files are served by your Spark, with no iPhone font installation or external font CDN required. Rajdhani remains the numeric/English display font and Chakra Petch remains the English UI font. System Korean fonts appear while the web font loads or if loading fails.
+
+Safari supports WOFF2 web fonts, although glyph rendering may differ slightly between Windows and iPhone. [WebKit font support](https://webkit.org/blog/6643/improved-font-loading/). Refresh the page after updating if the old typeface remains. Native GTK setup/tray typography is outside this change.

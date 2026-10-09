@@ -80,3 +80,7 @@ Server + tray → dgx-spark-control.slice (combined 480 MiB limit)
 표준 라이브러리 HTTP 서버는 인터넷 공개 서비스로 사용하지 않는다. localhost + Tailscale/SSH, 인증, Origin 검증, CSP, 경로 경계 확인, thread/body 상한으로 범위를 제한한다. 토큰 및 config를 공개 저장소에 넣지 않는다.
 
 비밀번호는 랜덤 salt + PBKDF2-HMAC-SHA256 600,000회 해시로 저장한다. 로그인 실패 30회/분 제한. 로그인 후 랜덤 세션을 브라우저 localStorage에, 그 SHA256만 서버 sessions.json(0600)에 보관한다. 고정 만료 없음은 사용자 요구사항이다. 재시작/업데이트는 보존하고 로그아웃/비밀번호 재설정은 해제한다. 최대 32기기를 넘으면 가장 오래 발급된 세션을 제거한다. 로컬 healthcheck/트레이는 0600 유지관리 토큰을 사용하며 원격 사용자 화면에 노출하지 않는다.
+
+## Web typography
+
+Korean UI uses self-hosted static SUIT 2.0.5 WOFF2 at 400/600/700. `--korean` supplies the fallback chain, `html[lang="ko"]` changes shared UI font tokens, and `--display` keeps Rajdhani numbers/English lettering. English UI retains Chakra Petch with SUIT for Korean glyph fallback. Native GTK typography is unchanged. Upstream source/license: `web/fonts/SUIT-SOURCE.md` and `SUIT-OFL.txt`.

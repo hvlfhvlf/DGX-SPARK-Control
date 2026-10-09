@@ -1,17 +1,17 @@
 # Easy installation on DGX Spark — English
 
-**0.2.0 · Ubuntu 24.04 / ARM64** · [한국어](QUICKSTART.ko.md)
+**0.2.1 · Ubuntu 24.04 / ARM64** · [한국어](QUICKSTART.ko.md)
 
 ## 1. Download the installer
 
-Download **dgx-spark-control_0.2.0_arm64.deb** to your Spark from [GitHub Releases](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.2.0).
+Download **dgx-spark-control_0.2.1_arm64.deb** to your Spark from [GitHub Releases](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.2.1).
 
 Open it in your software installer and choose **Install**. Administrator authentication may be required. GTK and tray dependencies are installed from Ubuntu repositories. Internet access is required; models, CUDA and NVIDIA drivers are not replaced.
 
 If no graphical package installer is available, or you prefer a terminal, run this from the download folder:
 
 ```bash
-sudo apt install ./dgx-spark-control_0.2.0_arm64.deb
+sudo apt install ./dgx-spark-control_0.2.1_arm64.deb
 ```
 
 Include `./`. Change to the actual download directory first. Run the following initial setup **as your normal user, without sudo**.
@@ -111,4 +111,4 @@ systemctl --user show dgx-spark-control.slice -p MemoryCurrent -p MemoryMax
 
 Server + tray have a **480 MiB** combined limit. Setup, browsers, model engines and Tailscale are outside that budget. This release targets DGX Spark Ubuntu ARM64; Windows and other platforms are on hold.
 
-[Full user guide](GUIDE.en.md) · [Validation and limitations](releases/0.2.0.md)
+[Full user guide](GUIDE.en.md) · [Validation and limitations](releases/0.2.1.md)

@@ -1,6 +1,6 @@
 # DGX-SPARK-Control 사용자 가이드 — 한국어
 
-**0.2.0** · [English](GUIDE.en.md) · [간편 설치](QUICKSTART.ko.md)
+**0.2.1** · [English](GUIDE.en.md) · [간편 설치](QUICKSTART.ko.md)
 
 ## 설치·접속
 
@@ -61,4 +61,10 @@ systemctl --user show dgx-spark-control.slice -p MemoryCurrent -p MemoryPeak -p 
 
 서버+트레이 합산 상한은 480 MiB이며 swap은 0입니다. 브라우저·모델·설정 마법사·Tailscale은 별도입니다. 접속 요청이 없으면 지표를 수집하지 않습니다. 장시간 추론에 대한 영향은 별도 벤치마크가 필요합니다.
 
-다른 LLM이 개발을 이어가면 [AGENTS.md](../AGENTS.md) → [구조](ARCHITECTURE.md) → [모델](MODELS.md) → [업데이트](UPDATES.md)를 읽게 하세요. 비밀 정보는 공개 자료에 포함하지 않습니다. [이번 버전 검증 기록](releases/0.2.0.md).
+다른 LLM이 개발을 이어가면 [AGENTS.md](../AGENTS.md) → [구조](ARCHITECTURE.md) → [모델](MODELS.md) → [업데이트](UPDATES.md)를 읽게 하세요. 비밀 정보는 공개 자료에 포함하지 않습니다. [이번 버전 검증 기록](releases/0.2.1.md).
+
+## 한글 웹폰트 / iPhone
+
+한글 웹 UI는 SUIT 2.0.5를 사용합니다. Regular(400)·SemiBold(600)·Bold(700) WOFF2 파일을 Spark에서 직접 제공하므로 iPhone에 폰트를 따로 설치하거나 외부 폰트 CDN에 접속할 필요가 없습니다. 큰 수치·영문 디스플레이에는 Rajdhani, 영어 UI에는 Chakra Petch를 유지합니다. 폰트 로딩 중이거나 로딩에 실패하면 시스템 한글 폰트로 표시합니다.
+
+Safari는 WOFF2 웹폰트를 지원합니다. 다만 Windows와 iPhone의 글자 렌더링은 미세하게 다를 수 있습니다. [WebKit 폰트 지원 설명](https://webkit.org/blog/6643/improved-font-loading/). 앱 업데이트 후 이전 글꼴이 남으면 페이지를 새로고침하세요. 네이티브 GTK 설정창·트레이의 폰트는 이번 변경 대상에 포함되지 않습니다.

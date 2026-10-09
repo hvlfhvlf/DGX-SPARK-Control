@@ -1,6 +1,6 @@
 # DGX-SPARK-Control
 
-**0.2.0 · NVIDIA DGX Spark · Ubuntu 24.04 ARM64**
+**0.2.1 · NVIDIA DGX Spark · Ubuntu 24.04 ARM64**
 
 **간편 설치: [한국어](docs/QUICKSTART.ko.md) | Easy installation: [English](docs/QUICKSTART.en.md)**
 
@@ -10,11 +10,11 @@ A lightweight dashboard hosted on your Spark, accessed through your browser and 
 
 ## Install / 설치
 
-1. Download **dgx-spark-control_0.2.0_arm64.deb** from [Releases](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.2.0) onto Spark. Spark에 설치 파일을 다운로드합니다.
+1. Download **dgx-spark-control_0.2.1_arm64.deb** from [Releases](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.2.1) onto Spark. Spark에 설치 파일을 다운로드합니다.
 2. Open it in the software installer, or run the following in its download folder. 파일을 열어 설치하거나 다운로드 폴더에서 실행합니다:
 
 ```bash
-sudo apt install ./dgx-spark-control_0.2.0_arm64.deb
+sudo apt install ./dgx-spark-control_0.2.1_arm64.deb
 ```
 
 3. Open **DGX-SPARK-Control Setup / 초기 설정** from Applications, or run as your normal user (without sudo):
@@ -56,7 +56,7 @@ The archive remains available for existing script installations; do not mix upda
 - On-demand shared metrics at most once per five seconds; no client requests means no collection.
 - Server + tray combined limit: **480 MiB = 503,316,480 bytes**, no swap. Models, browsers, setup and Tailscale are outside this budget.
 - No pip, npm, Docker, database server or resident LLM required.
-- Hard limits are not performance proof. [Actual validation and limitations](docs/releases/0.2.0.md).
+- Hard limits are not performance proof. [Actual validation and limitations](docs/releases/0.2.1.md).
 
 ## Features and limits
 
