@@ -2,7 +2,7 @@
 
 Date: 2026-11-02, Asia/Seoul. The owner authorized installation on Spark and real-data verification, while explicitly withholding GitHub publication. This is a private development build, not a public release.
 
-These records describe the preceding detail-only builds through `0.2.2~dev20261102.3`. The current combined service/detail candidate is documented in `../releases/0.3.0~rc1.md`. Earlier evidence and artifact hashes remain intact.
+These records describe the preceding detail-only builds through `0.2.2~dev20261102.3`. The current combined service/detail release is documented in `../releases/0.3.0.md`. Earlier evidence and artifact hashes remain intact.
 
 ## Detail cleanup: 0.2.2~dev20261102.3
 

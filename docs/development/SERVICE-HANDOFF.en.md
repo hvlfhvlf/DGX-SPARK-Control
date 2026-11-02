@@ -1,4 +1,4 @@
-# LLM service/model handoff — 0.3.0~rc1
+# LLM service/model handoff — 0.3.0
 
 Read AGENTS.md and ../MODELS.md first. The design research includes future scope; do not assume all proposed features exist.
 

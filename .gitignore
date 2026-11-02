@@ -7,3 +7,15 @@ dist/
 *.tar.gz
 *.zip
 *.log
+
+# Per-device credentials and private service registrations
+.env.*
+access-token
+password.json
+sessions.json
+services.json
+services-edit.json
+service-operations.json
+*.pem
+*.key
+*.p12

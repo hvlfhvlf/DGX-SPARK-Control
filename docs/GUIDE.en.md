@@ -1,8 +1,8 @@
 # DGX-SPARK-Control user guide — English
 
-**0.2.1** · [한국어](GUIDE.ko.md) · [Easy installation](QUICKSTART.en.md)
+**0.3.0** · [한국어](GUIDE.ko.md) · [Easy installation](QUICKSTART.en.md)
 
-## Metric details — next development version, not publicly released
+## Metric details
 
 Click any of the eight overview cards to open its own detail dialog: key readings, a 1-minute / 5-minute / 1-hour history, then metric-specific information. Phones retain two columns of key readings. SSD capacity has no time chart: it shows used/available/percentage/total, a composition bar and the mount point. Expand **Capacity details & calculation** for reserved space and df accounting. Memory shows used and available capacity; CPU shows per-core load; temperature lists reported sensors; network and disk I/O show both directions. SSD capacity covers the root filesystem; power covers the GPU.
 
@@ -10,7 +10,6 @@ The seven metrics other than SSD capacity have charts with time and units. Memor
 
 A dash means unsupported, unavailable or warming up. Disconnections retain the last readings and their original timestamp. Uncollected values such as memory clocks, whole-system power or IOPS are not invented. Expand **Measurement notes & sources** for included interfaces/devices, sensor identifiers, clock availability, units and calculation details. These technical notes are collapsed by default; live readings, per-core load, sensor temperatures, capacity composition and clock-limit events remain visible. Repeated architecture and graph statistics are omitted. Close using the button, Escape or backdrop. Updates preserve range selection, scroll position and expanded notes.
 
-The public 0.2.1 release does not include this redesign yet. Private Spark build `0.2.2~dev20261102.3` was verified with real data. See the [development specification](METRIC-DETAILS.md) and [live deployment record](development/METRIC-DETAILS-LOCAL-VALIDATION.md).
 
 ## Installation and access
 
@@ -54,7 +53,7 @@ Tray actions include open dashboard, copy address, setup, check for updates, ren
 
 ## Model management
 
-Existing user systemd services must be explicitly registered in `config.json` before control is allowed. Model discovery lists file candidates under configured paths. It does not download, delete, register or switch models automatically. Service `active` is different from inference readiness.
+Existing user systemd services must be registered in the private `services.json` registry before control is allowed. Legacy `config.json.models` is migrated once. Model discovery lists file candidates under configured paths. It does not download, delete, register or switch models automatically. Service `active` is different from inference readiness.
 
 Read [Model integration](MODELS.md), back up configuration, preserve its other fields and add only the intended models. Inference tok/s, TTFT and global queues require future adapters.
 
@@ -71,7 +70,7 @@ systemctl --user show dgx-spark-control.slice -p MemoryCurrent -p MemoryPeak -p 
 
 The server and tray share a 480 MiB limit with no swap. Browsers, models, setup and Tailscale are separate. There is no telemetry collection without client requests. Long-running inference impact requires a separate benchmark.
 
-For another LLM continuing development, read [AGENTS.md](../AGENTS.md), [Architecture](ARCHITECTURE.md), [Models](MODELS.md) and [Updates](UPDATES.md). Keep secrets out of public materials. [This release's validation](releases/0.2.1.md).
+For another LLM continuing development, read [AGENTS.md](../AGENTS.md), [Architecture](ARCHITECTURE.md), [Models](MODELS.md) and [Updates](UPDATES.md). Keep secrets out of public materials. [This release's validation](releases/0.3.0.md).
 
 ## Korean web font / iPhone
 
@@ -80,14 +79,16 @@ The Korean web UI uses SUIT 2.0.5. Regular (400), SemiBold (600) and Bold (700) 
 Safari supports WOFF2 web fonts, although glyph rendering may differ slightly between Windows and iPhone. [WebKit font support](https://webkit.org/blog/6643/improved-font-loading/). Refresh the page after updating if the old typeface remains. Native GTK setup/tray typography is outside this change.
 
 
-## 0.3.0~rc1 Service controls (not yet published)
+## Service controls and model display
 
 Models provides start/stop/restart and operation results. Select launch profiles in Details while stopped. Find services registers read-only candidates; enable control through the verified local registry CLI. ComfyUI running/pending counts and API readiness are separate from process state. Hermes and engines without configured probes show process status only. Models are never automatically installed or deleted. [Registration and replacement](MODELS.md).
 
 
-0.3.0~rc2: Cards with a configured application address provide **OPEN APP**; the application retains its own login. Model cards use the full model name as their title, quantization directly beneath it, and smaller inference/serving engine labels. These are verified launch-profile settings, not evidence that a stopped model is loaded. Unverified quantization displays "Not verified".
+Cards with a configured application address provide **OPEN APP**; the application retains its own login. Model cards use the full model name as their title, quantization directly beneath it, and smaller inference/serving engine labels. These are verified launch-profile settings, not evidence that a stopped model is loaded. Unverified quantization displays "Not verified".
 
 Service confirmation dialogs have equal-width Confirm (lime) and Cancel (red) buttons. Cancel only dismisses the dialog; it does not change the service.
 
 
 Use the pencil on a model card to edit the service name, full model name, quantization, inference engine and serving engine labels. Use Order, move cards up/down, then Save. Labels and order are stored on Spark and shared across devices; commands, ports, permissions and model files are unchanged. Reopen the editor if another device has already saved changes. Phone cards use two columns and the add/replace guide is collapsed. Metric detail notes (Current/Selected range) sit on the right.
+
+See [privacy and data flow](PRIVACY.md). Open App opens a configured address; configure the engine application’s Tailscale access separately.

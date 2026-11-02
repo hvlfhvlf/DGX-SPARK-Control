@@ -1,6 +1,6 @@
 # DGX-SPARK-Control
 
-**0.3.0~rc4 · NVIDIA DGX Spark · Ubuntu 24.04 ARM64**
+**0.3.0 · NVIDIA DGX Spark · Ubuntu 24.04 ARM64**
 
 **간편 설치: [한국어](docs/QUICKSTART.ko.md) | Easy installation: [English](docs/QUICKSTART.en.md)**
 
@@ -8,16 +8,16 @@
 
 A lightweight dashboard hosted on your Spark, accessed through your browser and Tailscale. 한국어·영어 설정 마법사, 실제 하드웨어 상태, 로컬 트레이, 등록한 모델 서비스 제어를 제공합니다.
 
-> Local release candidate: not published to GitHub. The download instructions below point to the last public stable release, 0.2.1.
-> 로컬 검증 후보입니다. GitHub 미게시 상태이며, 아래 다운로드는 기존 공개 안정판 0.2.1입니다.
+> New in 0.3.0: service start/stop/restart, editable model/engine labels, shared card ordering and compact live metric details.
+> 0.3.0: 서비스 제어·표시 정보 편집·순서 변경·실측 상세창을 제공합니다. 개인 설정과 모델 파일은 설치 패키지에 포함하지 않습니다.
 
 ## Install / 설치
 
-1. Download **dgx-spark-control_0.2.1_arm64.deb** from [Releases](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.2.1) onto Spark. Spark에 설치 파일을 다운로드합니다.
+1. Download **dgx-spark-control_0.3.0_arm64.deb** from [Releases](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.3.0) onto Spark. Spark에 설치 파일을 다운로드합니다.
 2. Open it in the software installer, or run the following in its download folder. 파일을 열어 설치하거나 다운로드 폴더에서 실행합니다:
 
 ```bash
-sudo apt install ./dgx-spark-control_0.2.1_arm64.deb
+sudo apt install ./dgx-spark-control_0.3.0_arm64.deb
 ```
 
 3. Open **DGX-SPARK-Control Setup / 초기 설정** from Applications, or run as your normal user (without sudo):
@@ -59,13 +59,19 @@ The archive remains available for existing script installations; do not mix upda
 - On-demand shared metrics at most once per five seconds; no client requests means no collection.
 - Server + tray combined limit: **480 MiB = 503,316,480 bytes**, no swap. Models, browsers, setup and Tailscale are outside this budget.
 - No pip, npm, Docker, database server or resident LLM required.
-- Hard limits are not performance proof. [Actual validation and limitations](docs/releases/0.2.1.md).
+- Hard limits are not performance proof. [Actual validation and limitations](docs/releases/0.3.0.md).
 
 ## Features and limits
 
 Live GPU/CPU utilization, unified memory, GPU temperature/power, supported clocks, root filesystem usage, physical network/disk I/O, real-history details, shared display name, explicit user-service controls and bounded model candidate discovery. Unsupported measurements display `—`.
 
-Service/profile registration, start/stop/restart, stopped-profile selection, and on-demand service discovery are available. ComfyUI API/queue counts and optional OpenAI-compatible model-list checks are separate from process state. Inference speed, global queues, engine-specific model load/unload, automatic installation/deletion and automatic switch rollback are not implemented. [Model guide](docs/MODELS.md).
+Service/profile registration, start/stop/restart, stopped-profile selection, display-label editing, shared card ordering and on-demand service discovery are available. ComfyUI API/queue counts and optional OpenAI-compatible model-list checks are separate from process state. Inference speed, global queues, engine-specific model load/unload, automatic installation/deletion and automatic switch rollback are not implemented. [Model guide](docs/MODELS.md).
+
+## Privacy / 개인정보
+
+No API keys, passwords, personal service addresses or model files are shipped. Credentials and service registrations are created on each Spark and remain outside package-managed code. No analytics or automatic telemetry upload is included. [Data flow and release audit scope](docs/PRIVACY.md).
+
+API 키·개인 주소·비밀번호는 배포하지 않습니다. 새 설치의 서비스 목록은 비어 있으며 각 기기에서 등록합니다. 설치기는 모델 엔진·ComfyUI 접속 게이트웨이·포트 공개를 자동 설정하지 않습니다.
 
 ## Development
 

@@ -1,6 +1,6 @@
 # 서비스·모델 연결 / Services and models
 
-0.3.0~rc4: **설치된 사용자 systemd 서비스**를 등록합니다. Dashboard runs no inference engine itself. Engine/weight installation and deletion remain separate tasks.
+0.3.0: **설치된 사용자 systemd 서비스**를 등록합니다. Dashboard runs no inference engine itself. Engine/weight installation and deletion remain separate tasks.
 
 ## Structure / 구조
 
@@ -35,7 +35,7 @@ Only local operators/LLMs may change `manager.unit`, `allow_control`, probe orig
 
 Add a verified profile under the same service ID. Stop the service, select the new profile in Details, then Start. Selection does not delete weights or start the model. A running selected profile cannot be rebound by CLI. 기존 모델은 보존하며 다시 정지 → 이전 프로필 선택 → 시작으로 복구할 수 있습니다.
 
-Automatic stop/switch/start rollback is intentionally not shipped in this candidate. If startup times out, the process may still be running: inspect the current state and local systemd journal before retrying. A completed operation is a point-in-time observation, not a guarantee of future health.
+Automatic stop/switch/start rollback is intentionally not shipped in 0.3.0. If startup times out, the process may still be running: inspect the current state and local systemd journal before retrying. A completed operation is a point-in-time observation, not a guarantee of future health.
 
 ComfyUI checkpoint additions normally do not require another service. ComfyUI updates should preserve its unit and recheck API contracts. Hermes provider configuration is distinct from its gateway service; do not assume it uses a particular local model.
 
@@ -76,3 +76,7 @@ The card title uses the full model name, followed by quantization and smaller in
 Models → pencil edits `name` (service, required, max 80) and the selected profile's `model_name`, `quantization`, `inference_engine`, `serving_engine` (optional, max 120 each; blank clears). Order saves an exact permutation of all service IDs. Both require authentication, same-origin requests and the current registry revision. Conflicting edits/operations are rejected. Saving does not start, stop or reconfigure any engine. The same registry is shared across devices and survives dashboard restart. Existing launches, app URLs and control permissions cannot be edited here.
 
 모델 탭의 연필 버튼은 표시 정보만 편집합니다. 순서 변경은 전체 서비스 ID의 순서만 저장합니다. 활성 프로필이 바뀌거나 다른 기기가 먼저 저장하면 창을 다시 열어 최신 정보를 확인합니다. 엔진/모델 설치·실행 설정 변경은 기존 로컬 CLI 절차를 사용합니다.
+
+App access is configured separately from dashboard access. A Tailscale connection does not override an engine app’s device allowlist, bind address, authentication or network policy. No personal ComfyUI gateway or Tailscale policy is bundled with this package.
+
+대시보드 접속과 앱 접속은 별도입니다. Tailscale 연결만으로 앱 자체의 기기 허용 목록·바인딩 주소·인증·접근 정책이 해제되지 않습니다. 이 패키지는 개인 ComfyUI 게이트웨이나 Tailscale 정책을 배포하지 않습니다.

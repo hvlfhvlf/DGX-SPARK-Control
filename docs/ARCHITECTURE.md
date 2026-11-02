@@ -28,7 +28,7 @@ Server + tray → dgx-spark-control.slice (combined 480 MiB limit)
 - `spark_control/server.py`: 정적 웹, 인증, Origin 검증, bounded HTTP worker, API 라우팅.
 - `config.py`: config schema 1, 초기값 `DGX_SPARK`, 원자적 저장, 토큰 생성.
 - `metrics.py`: 5초 캐시, CPU delta, 공유 메모리, GPU NVML, 센서 식별자, 물리 NIC/디스크 I/O, deque 이력.
-- `models.py`: 서비스 레지스트리, 시작/정지 요청, 10초 상태 캐시, 명시적 경로 검색.
+- `services.py`: 서비스/프로필 레지스트리, 제어 작업, 5초 공유 상태 캐시. `models.py`: 명시적 루트의 모델 파일 후보 검색.
 - `hardware.py`: 펌웨어 설치 용량과 OS MemTotal, NVML GPU 이름, 아키텍처·코어 수. 재시작 시 한 번 읽는 인벤토리.
 - `sessions.py`: 최대 32개 세션의 해시를 원자적으로 저장. 고정 만료 없음. 비밀번호 기록의 fingerprint가 바뀌면 기존 세션 무효화.
 - `tray.py`: 선택적 GTK/AppIndicator 데스크톱 메뉴. 정기 수집 없음, 로컬 OS 사용자 권한으로 비밀번호 복구 가능.
@@ -86,7 +86,7 @@ Server + tray → dgx-spark-control.slice (combined 480 MiB limit)
 Korean UI uses self-hosted static SUIT 2.0.5 WOFF2 at 400/600/700. `--korean` supplies the fallback chain, `html[lang="ko"]` changes shared UI font tokens, and `--display` keeps Rajdhani numbers/English lettering. English UI retains Chakra Petch with SUIT for Korean glyph fallback. Native GTK typography is unchanged. Upstream source/license: `web/fonts/SUIT-SOURCE.md` and `SUIT-OFL.txt`.
 
 
-## 0.3.0~rc1 service architecture
+## 0.3.0 service architecture
 
 `services.py` owns private registry schema 1, process/API observations and one bounded asynchronous control worker. `models.py` retains explicit-root asset candidate discovery. Legacy model APIs resolve the new registry. Existing authentication schema and session semantics are unchanged.
 
@@ -94,6 +94,6 @@ GET `/api/services`: sanitized services, selected profiles, process/API state, a
 
 One global cross-process file lock serializes registry writes and control operations. Persistent operation summaries (max 200) contain IDs/status/timestamps only; restart marks incomplete operations interrupted without replay. Known port/resource groups and service dependency conflicts are checked; unknown workloads are not inferred. Unit statuses share a 5-second batched cache. At most two API adapters are probed per refresh; HTTP replies are capped at 256 KiB, socket timeout 1s/deadline 2s per response. No redirects, remote probes, proxy credentials or raw workflow responses. The model view refreshes card values without replacing focused controls. Profile selection is allowed only while stopped; atomic hot switching/automatic rollback is deferred.
 
-### Service display mutations (0.3.0~rc4)
+### Service display mutations (0.3.0)
 
 Authenticated, same-origin POST `/api/services/display`: `{id, profile_id, revision, fields}`. Exact field allowlist: service `name`, profile `model_name`, `quantization`, `inference_engine`, `serving_engine`. POST `/api/services/order`: `{ids, revision}`, an exact ID permutation. Both use the registry lock, revision compare-and-swap and atomic 0600 persistence; they never issue a lifecycle command or change a launch binding. Labels are escaped on output. No new background worker or polling is added.

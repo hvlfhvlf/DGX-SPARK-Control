@@ -78,8 +78,8 @@ These commands are blocked for package-managed installs. Archives use staged ver
 - Never publish credentials, private model paths, raw telemetry or machine identifiers in packages.
 
 
-## 0.3.0~rc1 private candidate
+## 0.3.0 service registry migration / 서비스 등록 이전
 
-GitHub publication is pending owner instruction. Config/auth stays schema 1; services use a separate private schema-1 services.json. The first run migrates legacy models[] once without starting units. Subsequent edits use the local services CLI, not models[]. An older package ignores the new registry; do not edit both formats during rollback. Reapplying the candidate uses its preserved registry. Incomplete control operations are marked interrupted after server restart and are never replayed. Inspect actual service state before retrying.
+Config/auth stays schema 1; services use a separate private schema-1 services.json. The first run migrates legacy models[] once without starting units. Subsequent edits use the local services CLI, not models[]. An older package ignores the new registry; do not edit both formats during rollback. Reapplying 0.3.0 uses its preserved registry. Incomplete control operations are marked interrupted after server restart and are never replayed. Inspect actual service state before retrying.
 
-현재 후보는 GitHub 미게시 상태입니다. 업데이트 시 기존 로그인·비밀번호·설정·새 서비스 등록을 보존합니다. 패키지 복구 후 이전 버전에서는 새 서비스 카드가 보이지 않을 수 있으며, 후보를 재적용하면 보존된 등록을 사용합니다. 실행 중 제어 작업이 있다면 끝난 뒤 업데이트하고, 중단된 작업은 실제 서비스 상태를 먼저 확인합니다.
+업데이트 시 기존 로그인·비밀번호·설정·새 서비스 등록을 보존합니다. 패키지 복구 후 이전 버전에서는 새 서비스 카드가 보이지 않을 수 있으며, 0.3.0을 재적용하면 보존된 등록을 사용합니다. 실행 중 제어 작업이 있다면 끝난 뒤 업데이트하고, 중단된 작업은 실제 서비스 상태를 먼저 확인합니다.

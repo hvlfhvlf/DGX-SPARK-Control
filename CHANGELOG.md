@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 — 2026-11-03
+
+- Publish the validated rc1–rc4 service controls and compact telemetry details. Start/stop/restart registered user services, switch stopped profiles, discover read-only candidates and open configured apps.
+- Edit service/model/quantization/inference/serving labels and save shared card order. Mobile cards keep two columns; confirmation has equal-width lime Confirm and red Cancel.
+- Eight live detail views retain real data, missing-value semantics and collapsed technical notes. SSD capacity uses composition instead of history.
+- Refresh Korean/English install, update and model handoff guides; document privacy boundaries and exclude per-device credentials/addresses/configuration from release files.
+- Existing passwords, remembered sessions, registrations, model engines and the 480 MiB dashboard limit are preserved.
+
 ## 0.3.0~rc4 — 2026-11-02 · unpublished candidate
 
 - Add authenticated display-label editing and service ordering, persisted on Spark across devices. Only name/model/quantization/inference/serving labels can change; launch bindings and permissions stay local. Stale edits are rejected.

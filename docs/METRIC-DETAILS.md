@@ -1,6 +1,6 @@
 # Metric detail dialogs / 지표 상세창
 
-Status: privately installed and verified on Spark as `0.2.2~dev20261102.3`; not publicly released. GitHub publishing is deferred until the owner explicitly requests it. No server, model or installer changes are required by this frontend patch. See the [live deployment validation](development/METRIC-DETAILS-LOCAL-VALIDATION.md).
+Status: included in 0.3.0. Earlier private-build evidence remains in [the live deployment record](development/METRIC-DETAILS-LOCAL-VALIDATION.md); current release validation is in [0.3.0](releases/0.3.0.md).
 
 ## Information architecture
 
