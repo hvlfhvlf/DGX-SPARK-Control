@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0~rc2 — 2026-11-02 · unpublished candidate
+
+- Add direct application links on service cards and details, configured only in each Spark private registry. Existing authentication and Tailscale routes remain.
+- Add per-profile display model name, quantization, inference engine and serving engine, with escaped compact card text and detailed labels. Values come from verified operator configuration, not filename guesses.
+- Preserve every rc1 control, telemetry and safety boundary. No GitHub publication.
+
+
 ## 0.3.0~rc1 — 2026-11-02 · unpublished candidate
 
 - Redesign eight live metric details, preserving actual timestamps, missing-data semantics, compact responsive layouts and the original chip artwork.

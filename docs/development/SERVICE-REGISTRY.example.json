@@ -62,7 +62,11 @@
         "port:8000"
       ],
       "uses_service_ids": [],
-      "open_url": null
+      "open_url": null,
+      "model_name": "Example Model",
+      "quantization": null,
+      "inference_engine": null,
+      "serving_engine": null
     },
     {
       "id": "gateway-default",

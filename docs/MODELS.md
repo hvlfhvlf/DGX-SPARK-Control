@@ -1,6 +1,6 @@
 # 서비스·모델 연결 / Services and models
 
-0.3.0~rc1: **설치된 사용자 systemd 서비스**를 등록합니다. Dashboard runs no inference engine itself. Engine/weight installation and deletion remain separate tasks.
+0.3.0~rc2: **설치된 사용자 systemd 서비스**를 등록합니다. Dashboard runs no inference engine itself. Engine/weight installation and deletion remain separate tasks.
 
 ## Structure / 구조
 
@@ -61,3 +61,12 @@ Registered exclusive groups and known dependency relationships block unsafe over
 Logs, execution commands, private model paths and secrets remain local. A raw-log viewer is deliberately omitted. Model-root discovery in Settings is separate and does not establish engine compatibility.
 
 Read [한국어 LLM 가이드](development/SERVICE-HANDOFF.ko.md), [English handoff](development/SERVICE-HANDOFF.en.md), and [design research / future scope](development/MODEL-SERVICES-PLAN.md).
+
+
+## App links and display metadata / 앱 바로가기·모델 표시
+
+Optional profile fields `model_name`, `quantization`, `inference_engine`, `serving_engine` contain verified display names (max 120 characters), not command lines, keys or absolute model paths. Set them when adding/replacing a profile; they are operator metadata and do not assert that a stopped model is loaded. `open_url` is the existing browser-reachable application address. It appears on the card and in Details; it is separate from the loopback probe. Credentials, URL query tokens and fragments are rejected. The button opens the existing app; its own login remains in effect. Do not change networking or expose a service just to populate the link.
+
+모델 풀네임을 카드 제목으로, 그 아래에 양자화를 표시하고 추론·서빙 엔진은 작은 보조 정보로 표시합니다. 모델 교체 시 함께 갱신하며 양자화는 설치된 설정에서 확인하고 추측하지 않습니다. 미확인 값은 null로 남깁니다. ComfyUI/Hermes 주소는 각 Spark의 개인 설정에만 저장합니다. 공개 예제에는 실제 접속 주소를 넣지 않습니다.
+
+The card title uses the full model name, followed by quantization and smaller inference/serving metadata. Confirm quantization from installed configuration; use null when unverified.

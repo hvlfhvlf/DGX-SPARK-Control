@@ -1,6 +1,6 @@
 # DGX-SPARK-Control
 
-**0.3.0~rc1 · NVIDIA DGX Spark · Ubuntu 24.04 ARM64**
+**0.3.0~rc2 · NVIDIA DGX Spark · Ubuntu 24.04 ARM64**
 
 **간편 설치: [한국어](docs/QUICKSTART.ko.md) | Easy installation: [English](docs/QUICKSTART.en.md)**
 

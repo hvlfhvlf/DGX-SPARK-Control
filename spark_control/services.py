@@ -107,6 +107,8 @@ def validate(value):
         normalized = dict(id=pid, service_id=sid, name=text(p.get('name')), manager=dict(type='systemd-user', unit=unit),
             allow_control=p.get('allow_control', False), probe=dict(origin=probe) if probe else None,
             startup_timeout_seconds=seconds, exclusive_groups=groups, uses_service_ids=deps, asset_ids=refs, open_url=open_url)
+        for key in ('model_name', 'quantization', 'inference_engine', 'serving_engine'):
+            normalized[key] = text(p[key], 120) if p.get(key) is not None else None
         profiles[pid] = normalized
         result['profiles'].append(normalized)
     for s in result['services']:
@@ -296,6 +298,7 @@ class Services:
                     state = process_state(states.get(p['manager']['unit'], {}))
                     rows.append(dict(id=service['id'], name=service['name'], adapter=service['adapter'], state=state,
                         profile_id=p['id'], profile_name=p['name'], controllable=p['allow_control'] and state != 'unknown',
+                        model_name=p['model_name'], quantization=p['quantization'], inference_engine=p['inference_engine'], serving_engine=p['serving_engine'],
                         open_url=p['open_url'], profiles=[dict(id=q['id'], name=q['name'], controllable=q['allow_control'], state=process_state(states.get(q['manager']['unit'], {}))) for q in profiles],
                         **probe(service['adapter'], p, state if service['id'] in selected or service['adapter'] in ('process', 'hermes') else 'unknown')))
                 self.cached = rows

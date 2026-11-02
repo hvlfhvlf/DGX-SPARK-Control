@@ -69,6 +69,23 @@ class ServiceTests(unittest.TestCase):
             self.assertNotIn('manager',row)
             self.assertNotIn('probe',row)
 
+    def test_profile_display_metadata_and_safe_app_link(self):
+        value=self.svc.registry.read()
+        value['profiles'][0].update(model_name='Example Model', quantization='NVFP4 · Mixed precision', inference_engine='Example native', serving_engine='Example OpenAI API', open_url='https://app.example:8443/')
+        self.svc.registry.apply(value,1)
+        with patch('spark_control.services.system_states',side_effect=states):
+            row=self.svc.listing()['services'][0]
+            self.assertEqual(row['model_name'],'Example Model')
+            self.assertEqual(row['quantization'],'NVFP4 · Mixed precision')
+            self.assertEqual(row['inference_engine'],'Example native')
+            self.assertEqual(row['serving_engine'],'Example OpenAI API')
+            self.assertEqual(row['open_url'],'https://app.example:8443/')
+        oversized=copy.deepcopy(value);oversized['profiles'][0]['quantization']='x'*121
+        with self.assertRaises(ServiceError):validate(oversized)
+        for url in ['javascript:alert(1)','https://app.example/?token=private','https://user:secret@app.example/']:
+            value['profiles'][0]['open_url']=url
+            with self.assertRaises(ServiceError):validate(value)
+
     def test_readiness_does_not_leak_workflows_or_model_paths(self):
         p=validate(fixture())['profiles'][0];p['probe']={'origin':'http://127.0.0.1:8188'}
         with patch('spark_control.services.local_json',side_effect=[{'system':{},'devices':[]},{'queue_running':[['private prompt','/private/model']], 'queue_pending':[]} ]):

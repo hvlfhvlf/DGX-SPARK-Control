@@ -83,3 +83,6 @@ Safari supports WOFF2 web fonts, although glyph rendering may differ slightly be
 ## 0.3.0~rc1 Service controls (not yet published)
 
 Models provides start/stop/restart and operation results. Select launch profiles in Details while stopped. Find services registers read-only candidates; enable control through the verified local registry CLI. ComfyUI running/pending counts and API readiness are separate from process state. Hermes and engines without configured probes show process status only. Models are never automatically installed or deleted. [Registration and replacement](MODELS.md).
+
+
+0.3.0~rc2: Cards with a configured application address provide **OPEN APP**; the application retains its own login. Model cards use the full model name as their title, quantization directly beneath it, and smaller inference/serving engine labels. These are verified launch-profile settings, not evidence that a stopped model is loaded. Unverified quantization displays "Not verified".
