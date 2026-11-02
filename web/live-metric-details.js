@@ -15,7 +15,7 @@
  const time=t=>D.valid(t)?new Date(t*1000).toLocaleTimeString(uiLanguage==='ko'?'ko-KR':'en-GB',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
  const stamp=(s)=>s.timestamp?new Date(s.timestamp*1000).toLocaleString(uiLanguage==='ko'?'ko-KR':'en-GB',{hour12:false}):'—';
  const eventState=(events,key)=>events===null?L('Unavailable','확인 불가'):events[key]?L('Detected','감지됨'):L('Not detected','감지 안 됨');
- const stat=(label,value,unit='',note='',text=false)=>`<div class="td-stat${text?' td-stat-text':''}"><span>${E(label)}</span><strong>${E(value)}${unit?`<small>${E(unit)}</small>`:''}</strong><small class="td-stat-note">${E(note)}</small></div>`;
+ const stat=(label,value,unit='',note='',text=false)=>`<div class="td-stat${text?' td-stat-text':''}"><div class="td-stat-head"><span>${E(label)}</span>${note?`<small class="td-stat-note">${E(note)}</small>`:''}</div><strong>${E(value)}${unit?`<small>${E(unit)}</small>`:''}</strong></div>`;
  const rateStat=(label,value,note)=>stat(label,rate(value>=1000?value/1000:value),value>=1000?'GB/s':'MB/s',note);
  const rows=items=>`<dl class="td-rows">${items.map(([label,value])=>`<div><dt>${E(label)}</dt><dd>${E(String(value??'—'))}</dd></div>`).join('')}</dl>`;
  const block=(title,body)=>`<section class="td-section"><h3>${E(title)}</h3>${body}</section>`;

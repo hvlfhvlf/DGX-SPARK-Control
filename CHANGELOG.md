@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0~rc4 — 2026-11-02 · unpublished candidate
+
+- Add authenticated display-label editing and service ordering, persisted on Spark across devices. Only name/model/quantization/inference/serving labels can change; launch bindings and permissions stay local. Stale edits are rejected.
+- Compact service cards with two columns on phones, an edit pencil and a collapsed add/replace guide.
+- Move telemetry summary notes to the right and remove the separate note row. Tighten all eight metric detail headers and summary spacing.
+- Retain rc3 equal-width confirmation/cancellation. GitHub publication remains on hold.
+
 ## 0.3.0~rc3 — 2026-11-02 · unpublished candidate
 
 - Give service confirmation dialogs an equal-width, full-row Confirm/Cancel footer, with lime confirmation and red cancellation. Keep two columns on phones and the existing close/focus behavior.

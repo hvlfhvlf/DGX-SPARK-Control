@@ -178,6 +178,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply(200, self.server.services.discover())
             elif path == "/api/services/register":
                 self.reply(200, self.server.services.register_candidate(data.get('candidate_id'), data.get('revision')))
+            elif path == "/api/services/display":
+                self.reply(200, self.server.services.update_display(data))
+            elif path == "/api/services/order":
+                self.reply(200, self.server.services.reorder(data))
             elif path == "/api/models/discover":
                 self.reply(200, self.server.models.discover())
             else:

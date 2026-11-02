@@ -41,13 +41,35 @@ class ServerTests(unittest.TestCase):
             with self.assertRaises(urllib.error.HTTPError) as error:
                 self.request(path, token=False)
             self.assertEqual(error.exception.code, 401)
-        for path in ['/api/services/action', '/api/services/discover', '/api/services/register']:
+        for path in ['/api/services/action', '/api/services/discover', '/api/services/register', '/api/services/display', '/api/services/order']:
             with self.assertRaises(urllib.error.HTTPError) as error:
                 self.request(path, {}, token=False)
             self.assertEqual(error.exception.code, 401)
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                self.request(path, {}, origin='https://untrusted.example')
+            self.assertEqual(error.exception.code, 403)
         with self.assertRaises(urllib.error.HTTPError) as error:
             self.request('/api/settings', {'spark_name': 'Bad'}, origin='https://untrusted.example')
         self.assertEqual(error.exception.code, 403)
+
+    def test_service_display_and_order_http_persistence(self):
+        from spark_control.services import Registry
+        value = dict(registry_schema=1, revision=0, services=[dict(id='test', name='Test', adapter='process', default_profile_id='one')],
+            profiles=[dict(id='one', service_id='test', name='One', manager=dict(type='systemd-user', unit='fixture.service'))], assets=[])
+        self.server.services.registry.apply(value, 0)
+        with patch('spark_control.services.subprocess.run') as run:
+            result = self.request('/api/services/display', dict(id='test', profile_id='one', revision=1, fields={'name':'My service', 'model_name':'Model name'}))
+            self.assertEqual(result['revision'], 2)
+            self.request('/api/services/order', dict(ids=['test'], revision=2))
+            restored = Registry(self.temp.name).read()
+            self.assertEqual(restored['revision'], 3)
+            self.assertEqual(restored['services'][0]['name'], 'My service')
+            self.assertEqual(restored['profiles'][0]['model_name'], 'Model name')
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                self.request('/api/services/display', dict(id='test', profile_id='one', revision=1, fields={'name':'Stale'}))
+            self.assertEqual(error.exception.code, 409)
+            self.assertEqual(Registry(self.temp.name).read(), restored)
+            run.assert_not_called()
 
     def test_name_survives_restart_and_invalid_names(self):
         self.assertEqual(self.request('/api/settings')['spark_name'], 'DGX_SPARK')

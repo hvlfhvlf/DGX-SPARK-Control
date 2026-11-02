@@ -1,6 +1,6 @@
 # 서비스·모델 연결 / Services and models
 
-0.3.0~rc2: **설치된 사용자 systemd 서비스**를 등록합니다. Dashboard runs no inference engine itself. Engine/weight installation and deletion remain separate tasks.
+0.3.0~rc4: **설치된 사용자 systemd 서비스**를 등록합니다. Dashboard runs no inference engine itself. Engine/weight installation and deletion remain separate tasks.
 
 ## Structure / 구조
 
@@ -70,3 +70,9 @@ Optional profile fields `model_name`, `quantization`, `inference_engine`, `servi
 모델 풀네임을 카드 제목으로, 그 아래에 양자화를 표시하고 추론·서빙 엔진은 작은 보조 정보로 표시합니다. 모델 교체 시 함께 갱신하며 양자화는 설치된 설정에서 확인하고 추측하지 않습니다. 미확인 값은 null로 남깁니다. ComfyUI/Hermes 주소는 각 Spark의 개인 설정에만 저장합니다. 공개 예제에는 실제 접속 주소를 넣지 않습니다.
 
 The card title uses the full model name, followed by quantization and smaller inference/serving metadata. Confirm quantization from installed configuration; use null when unverified.
+
+## Display editing and order / 표시 편집·순서
+
+Models → pencil edits `name` (service, required, max 80) and the selected profile's `model_name`, `quantization`, `inference_engine`, `serving_engine` (optional, max 120 each; blank clears). Order saves an exact permutation of all service IDs. Both require authentication, same-origin requests and the current registry revision. Conflicting edits/operations are rejected. Saving does not start, stop or reconfigure any engine. The same registry is shared across devices and survives dashboard restart. Existing launches, app URLs and control permissions cannot be edited here.
+
+모델 탭의 연필 버튼은 표시 정보만 편집합니다. 순서 변경은 전체 서비스 ID의 순서만 저장합니다. 활성 프로필이 바뀌거나 다른 기기가 먼저 저장하면 창을 다시 열어 최신 정보를 확인합니다. 엔진/모델 설치·실행 설정 변경은 기존 로컬 CLI 절차를 사용합니다.

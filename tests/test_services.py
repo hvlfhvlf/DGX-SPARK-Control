@@ -99,6 +99,50 @@ class ServiceTests(unittest.TestCase):
         with patch('spark_control.services.local_json',side_effect=OSError('sensitive exception')):
             self.assertEqual(probe('comfyui',p,'running')['readiness'],'unreachable')
 
+    def test_display_edit_persists_without_changing_launch_settings(self):
+        before = self.svc.registry.read()
+        with patch('spark_control.services.subprocess.run') as run:
+            self.svc.update_display(dict(id='test', profile_id='one', revision=1,
+                fields=dict(name='  My service  ', model_name='My model', quantization='FP4', inference_engine='Engine', serving_engine='API')))
+            restored = Services(self.config).registry.read()
+            run.assert_not_called()
+        self.assertEqual(restored['services'][0]['name'], 'My service')
+        for key in ['manager', 'allow_control', 'probe', 'startup_timeout_seconds', 'exclusive_groups', 'uses_service_ids', 'asset_ids', 'open_url']:
+            self.assertEqual(restored['profiles'][0][key], before['profiles'][0][key])
+        self.assertEqual(restored['profiles'][1], before['profiles'][1])
+        self.svc.update_display(dict(id='test', profile_id='one', revision=2, fields=dict(model_name='', quantization=None)))
+        self.assertIsNone(self.svc.registry.read()['profiles'][0]['model_name'])
+
+    def test_display_edit_rejects_privileged_fields_stale_revision_and_invalid_names(self):
+        base=dict(id='test', profile_id='one', revision=1, fields={'name':'Name'})
+        invalid=[dict(base, revision=0),dict(base, revision=True),dict(base, profile_id='two'),dict(base, id='missing'),dict(base, command='run')]
+        invalid += [dict(base, fields={k:'value'}) for k in ['manager','open_url','allow_control','probe','default_profile_id']]
+        invalid += [dict(base, fields={'name':v}) for v in ['', '   ', '\nInjected', 'x'*81, None]]
+        invalid += [dict(base, fields={'model_name':'x'*121})]
+        original=self.svc.registry.path.read_bytes()
+        with patch('spark_control.services.subprocess.run') as run:
+            for payload in invalid:
+                with self.assertRaises(ServiceError):self.svc.update_display(payload)
+                self.assertEqual(self.svc.registry.path.read_bytes(),original)
+            run.assert_not_called()
+
+    def test_order_requires_exact_id_permutation_and_survives_reload(self):
+        value=self.svc.registry.read()
+        value['services'].append(dict(id='other',name='Other',adapter='process',default_profile_id='three'))
+        value['profiles'].append(dict(id='three',service_id='other',name='Three',manager=dict(type='systemd-user',unit='other.service')))
+        self.svc.registry.apply(value,1)
+        before=self.svc.registry.read()
+        with patch('spark_control.services.subprocess.run') as run:
+            for ids in [['other'],['other','other'],['test','missing'],[3,'test']]:
+                with self.assertRaises(ServiceError):self.svc.reorder(dict(ids=ids,revision=2))
+            self.svc.reorder(dict(ids=['other','test'],revision=2))
+            restored=Services(self.config).registry.read()
+            self.assertEqual([s['id'] for s in restored['services']],['other','test'])
+            self.assertEqual(restored['profiles'],before['profiles'])
+            with self.assertRaisesRegex(ServiceError,'revision_conflict'):
+                self.svc.reorder(dict(ids=['test','other'],revision=2))
+            run.assert_not_called()
+
     def test_select_requires_stop_and_does_not_start(self):
         with patch('spark_control.services.system_states',side_effect=lambda u:states(u,['test-one.service'])), patch.object(self.svc,'_command') as command:
             with self.assertRaisesRegex(ServiceError,'stop_before_switch'):

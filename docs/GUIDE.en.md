@@ -88,3 +88,6 @@ Models provides start/stop/restart and operation results. Select launch profiles
 0.3.0~rc2: Cards with a configured application address provide **OPEN APP**; the application retains its own login. Model cards use the full model name as their title, quantization directly beneath it, and smaller inference/serving engine labels. These are verified launch-profile settings, not evidence that a stopped model is loaded. Unverified quantization displays "Not verified".
 
 Service confirmation dialogs have equal-width Confirm (lime) and Cancel (red) buttons. Cancel only dismisses the dialog; it does not change the service.
+
+
+Use the pencil on a model card to edit the service name, full model name, quantization, inference engine and serving engine labels. Use Order, move cards up/down, then Save. Labels and order are stored on Spark and shared across devices; commands, ports, permissions and model files are unchanged. Reopen the editor if another device has already saved changes. Phone cards use two columns and the add/replace guide is collapsed. Metric detail notes (Current/Selected range) sit on the right.

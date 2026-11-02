@@ -315,6 +315,53 @@ class Services:
             op.update(changes)
             atomic(self.operation_path, self.operations)
 
+    def update_display(self, payload):
+        """Only public-facing labels, never launch settings or permissions."""
+        if not isinstance(payload, dict) or set(payload) != {'id', 'profile_id', 'revision', 'fields'}:
+            raise ServiceError('invalid_display_fields')
+        fields = payload['fields']
+        allowed = {'name', 'model_name', 'quantization', 'inference_engine', 'serving_engine'}
+        if not isinstance(fields, dict) or not fields or not set(fields) <= allowed:
+            raise ServiceError('invalid_display_fields')
+        if type(payload['revision']) is not int:
+            raise ServiceError('invalid_revision')
+        cleaned = {}
+        for key, value in fields.items():
+            if key != 'name' and (value is None or isinstance(value, str) and not value.strip()):
+                cleaned[key] = None
+            else:
+                # Validate before stripping so control characters cannot be hidden.
+                cleaned[key] = text(text(value, 80 if key == 'name' else 120).strip(), 80 if key == 'name' else 120)
+        with self.registry.exclusive():
+            value = self.registry.read()
+            if payload['revision'] != value['revision']:
+                raise ServiceError('revision_conflict')
+            service = next((s for s in value['services'] if s['id'] == payload['id']), None)
+            if not service:
+                raise ServiceError('unknown_service')
+            if service['default_profile_id'] != payload['profile_id']:
+                raise ServiceError('revision_conflict')
+            profile = next(p for p in value['profiles'] if p['id'] == payload['profile_id'])
+            for key, label in cleaned.items():
+                (service if key == 'name' else profile)[key] = label
+            saved = self.registry.save_locked(value, payload['revision'])
+        return dict(revision=saved['revision'])
+
+    def reorder(self, payload):
+        if not isinstance(payload, dict) or set(payload) != {'ids', 'revision'} or type(payload['revision']) is not int:
+            raise ServiceError('invalid_order')
+        ids = payload['ids']
+        if not isinstance(ids, list) or len(ids) > 32 or any(not isinstance(s, str) for s in ids):
+            raise ServiceError('invalid_order')
+        with self.registry.exclusive():
+            value = self.registry.read()
+            services = {s['id']: s for s in value['services']}
+            if len(ids) != len(services) or set(ids) != set(services):
+                raise ServiceError('invalid_order')
+            value['services'] = [services[sid] for sid in ids]
+            saved = self.registry.save_locked(value, payload['revision'])
+        return dict(revision=saved['revision'])
+
     def recent_events(self):
         with self.op_lock:
             return [dict(timestamp=o.get('finished_at', o.get('created_at', 0)), message=f"{o['service_id']} · {o['action']} · {o['status']}") for o in reversed(self.operations)]
