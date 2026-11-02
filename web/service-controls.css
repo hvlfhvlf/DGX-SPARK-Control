@@ -5,3 +5,8 @@
 .service-model-meta{font-size:12px;line-height:1.6;color:var(--muted);min-height:39px;overflow-wrap:anywhere}.service-open{grid-column:1/-1;display:flex;justify-content:center;align-items:center;gap:10px}.service-open .ui-arrow{width:14px;height:14px}.service-engine-details{margin:0 0 24px;display:grid;gap:10px}.service-engine-details>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:12px}.service-engine-details dt{color:var(--muted);font-size:13px}.service-engine-details dd{margin:0;overflow-wrap:anywhere}@media(max-width:600px){.service-model-meta{font-size:11px;min-height:54px}.service-engine-details>div{grid-template-columns:1fr}.service-engine-details dd{font-size:14px}}
 
 .service-buttons{grid-template-rows:repeat(2,42px);align-content:start}
+
+.service-confirm-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%;margin-top:28px;padding-top:20px;border-top:1px solid var(--line)}
+.service-confirm-actions .button{width:100%;min-width:0;min-height:56px;padding:14px 12px;font-size:14px}
+.service-confirm-actions .service-cancel{background:#f07070;border-color:#f07070;color:#211111}
+@media(max-width:600px){.service-confirm-actions{gap:10px;margin-top:24px;padding-top:16px}.service-confirm-actions .button{min-height:52px;padding:12px 8px}}

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0~rc3 — 2026-11-02 · unpublished candidate
+
+- Give service confirmation dialogs an equal-width, full-row Confirm/Cancel footer, with lime confirmation and red cancellation. Keep two columns on phones and the existing close/focus behavior.
+- UI-only follow-up; no service control, registry or authentication changes. GitHub publication remains on hold.
+
 ## 0.3.0~rc2 — 2026-11-02 · unpublished candidate
 
 - Add direct application links on service cards and details, configured only in each Spark private registry. Existing authentication and Tailscale routes remain.

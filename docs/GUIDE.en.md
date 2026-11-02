@@ -86,3 +86,5 @@ Models provides start/stop/restart and operation results. Select launch profiles
 
 
 0.3.0~rc2: Cards with a configured application address provide **OPEN APP**; the application retains its own login. Model cards use the full model name as their title, quantization directly beneath it, and smaller inference/serving engine labels. These are verified launch-profile settings, not evidence that a stopped model is loaded. Unverified quantization displays "Not verified".
+
+Service confirmation dialogs have equal-width Confirm (lime) and Cancel (red) buttons. Cancel only dismisses the dialog; it does not change the service.
