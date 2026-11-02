@@ -2,6 +2,16 @@
 
 **0.2.1** · [한국어](GUIDE.ko.md) · [Easy installation](QUICKSTART.en.md)
 
+## Metric details — next development version, not publicly released
+
+Click any of the eight overview cards to open its own detail dialog: key readings, a 1-minute / 5-minute / 1-hour history, then metric-specific information. Phones retain two columns of key readings. SSD capacity has no time chart: it shows used/available/percentage/total, a composition bar and the mount point. Expand **Capacity details & calculation** for reserved space and df accounting. Memory shows used and available capacity; CPU shows per-core load; temperature lists reported sensors; network and disk I/O show both directions. SSD capacity covers the root filesystem; power covers the GPU.
+
+The seven metrics other than SSD capacity have charts with time and units. Memory uses the reported capacity as its ceiling; CPU/GPU utilization uses 0–100%. Other axes never shrink while the same dialog/range is open. Average and peak include valid collected samples only; missing intervals remain gaps. Rates use MB/s; headline readings at or above 1,000 MB/s switch to GB/s.
+
+A dash means unsupported, unavailable or warming up. Disconnections retain the last readings and their original timestamp. Uncollected values such as memory clocks, whole-system power or IOPS are not invented. Expand **Measurement notes & sources** for included interfaces/devices, sensor identifiers, clock availability, units and calculation details. These technical notes are collapsed by default; live readings, per-core load, sensor temperatures, capacity composition and clock-limit events remain visible. Repeated architecture and graph statistics are omitted. Close using the button, Escape or backdrop. Updates preserve range selection, scroll position and expanded notes.
+
+The public 0.2.1 release does not include this redesign yet. Private Spark build `0.2.2~dev20261102.3` was verified with real data. See the [development specification](METRIC-DETAILS.md) and [live deployment record](development/METRIC-DETAILS-LOCAL-VALIDATION.md).
+
 ## Installation and access
 
 Follow [Easy installation](QUICKSTART.en.md), install the `.deb`, and open **DGX-SPARK-Control Setup** from Applications. Choose Korean or English, save your display name and password, and start the server. Leave both password fields empty to keep an existing password.
@@ -68,3 +78,8 @@ For another LLM continuing development, read [AGENTS.md](../AGENTS.md), [Archite
 The Korean web UI uses SUIT 2.0.5. Regular (400), SemiBold (600) and Bold (700) WOFF2 files are served by your Spark, with no iPhone font installation or external font CDN required. Rajdhani remains the numeric/English display font and Chakra Petch remains the English UI font. System Korean fonts appear while the web font loads or if loading fails.
 
 Safari supports WOFF2 web fonts, although glyph rendering may differ slightly between Windows and iPhone. [WebKit font support](https://webkit.org/blog/6643/improved-font-loading/). Refresh the page after updating if the old typeface remains. Native GTK setup/tray typography is outside this change.
+
+
+## 0.3.0~rc1 Service controls (not yet published)
+
+Models provides start/stop/restart and operation results. Select launch profiles in Details while stopped. Find services registers read-only candidates; enable control through the verified local registry CLI. ComfyUI running/pending counts and API readiness are separate from process state. Hermes and engines without configured probes show process status only. Models are never automatically installed or deleted. [Registration and replacement](MODELS.md).

@@ -1,12 +1,15 @@
 # DGX-SPARK-Control
 
-**0.2.1 · NVIDIA DGX Spark · Ubuntu 24.04 ARM64**
+**0.3.0~rc1 · NVIDIA DGX Spark · Ubuntu 24.04 ARM64**
 
 **간편 설치: [한국어](docs/QUICKSTART.ko.md) | Easy installation: [English](docs/QUICKSTART.en.md)**
 
 **사용자 가이드: [한국어](docs/GUIDE.ko.md) | User guide: [English](docs/GUIDE.en.md)**
 
 A lightweight dashboard hosted on your Spark, accessed through your browser and Tailscale. 한국어·영어 설정 마법사, 실제 하드웨어 상태, 로컬 트레이, 등록한 모델 서비스 제어를 제공합니다.
+
+> Local release candidate: not published to GitHub. The download instructions below point to the last public stable release, 0.2.1.
+> 로컬 검증 후보입니다. GitHub 미게시 상태이며, 아래 다운로드는 기존 공개 안정판 0.2.1입니다.
 
 ## Install / 설치
 
@@ -62,7 +65,7 @@ The archive remains available for existing script installations; do not mix upda
 
 Live GPU/CPU utilization, unified memory, GPU temperature/power, supported clocks, root filesystem usage, physical network/disk I/O, real-history details, shared display name, explicit user-service controls and bounded model candidate discovery. Unsupported measurements display `—`.
 
-Inference speed, engine readiness, global job queues and automatic model installation/deletion/switching still need engine adapters. Models must be explicitly registered; service active does not prove inference readiness. [Model guide](docs/MODELS.md).
+Service/profile registration, start/stop/restart, stopped-profile selection, and on-demand service discovery are available. ComfyUI API/queue counts and optional OpenAI-compatible model-list checks are separate from process state. Inference speed, global queues, engine-specific model load/unload, automatic installation/deletion and automatic switch rollback are not implemented. [Model guide](docs/MODELS.md).
 
 ## Development
 

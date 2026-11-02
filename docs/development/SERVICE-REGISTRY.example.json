@@ -1,0 +1,90 @@
+{
+  "registry_schema": 1,
+  "revision": 1,
+  "services": [
+    {
+      "id": "image-app",
+      "name": "ComfyUI",
+      "adapter": "comfyui",
+      "default_profile_id": "image-default"
+    },
+    {
+      "id": "local-llm",
+      "name": "Local LLM",
+      "adapter": "openai-compatible",
+      "default_profile_id": "llm-default"
+    },
+    {
+      "id": "assistant-gateway",
+      "name": "Hermes Gateway",
+      "adapter": "hermes",
+      "default_profile_id": "gateway-default"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "image-default",
+      "service_id": "image-app",
+      "name": "Default",
+      "manager": {
+        "type": "systemd-user",
+        "unit": "example-image-app.service"
+      },
+      "allow_control": false,
+      "asset_ids": [],
+      "probe": {
+        "origin": "http://127.0.0.1:8188"
+      },
+      "startup_timeout_seconds": 180,
+      "exclusive_groups": [
+        "port:8188"
+      ],
+      "uses_service_ids": [],
+      "open_url": null
+    },
+    {
+      "id": "llm-default",
+      "service_id": "local-llm",
+      "name": "Example model profile",
+      "manager": {
+        "type": "systemd-user",
+        "unit": "example-llm.service"
+      },
+      "allow_control": false,
+      "asset_ids": [
+        "example-model"
+      ],
+      "probe": {
+        "origin": "http://127.0.0.1:8000"
+      },
+      "startup_timeout_seconds": 600,
+      "exclusive_groups": [
+        "port:8000"
+      ],
+      "uses_service_ids": [],
+      "open_url": null
+    },
+    {
+      "id": "gateway-default",
+      "service_id": "assistant-gateway",
+      "name": "Existing gateway",
+      "manager": {
+        "type": "systemd-user",
+        "unit": "example-gateway.service"
+      },
+      "allow_control": false,
+      "asset_ids": [],
+      "probe": null,
+      "startup_timeout_seconds": 120,
+      "exclusive_groups": [],
+      "uses_service_ids": [],
+      "open_url": null
+    }
+  ],
+  "assets": [
+    {
+      "id": "example-model",
+      "name": "Example model"
+    }
+  ]
+}

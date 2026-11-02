@@ -1,8 +1,11 @@
 'use strict';
 // Installed runtime. The original UI is retained; simulated telemetry never runs here.
-const liveNode={sample:null,history:[],models:[],events:[],hardware:null,connected:false,busy:false,version:'0.1.2',authMode:'password',token:localStorage.getItem('spark.access')||sessionStorage.getItem('spark.access')||''};
+const liveNode={sample:null,history:[],models:[],services:{revision:0,services:[]},servicesConnected:null,events:[],hardware:null,connected:false,busy:false,version:'0.1.2',authMode:'password',token:localStorage.getItem('spark.access')||sessionStorage.getItem('spark.access')||''};
 const tr=(en,ko)=>uiLanguage==='ko'?ko:en;
 const fmt=(v,places=1)=>v==null?'—':Number(v).toFixed(places);
+// Fail closed if a detail asset fails to load; never fall back to prototype fixtures.
+renderMetricDetailBody=function(){};
+showMetricDetail=function(){metricExplorer=null;showModal(`<h2 id="modalTitle">${tr('DETAILS UNAVAILABLE','상세창을 불러올 수 없습니다')}</h2><p>${tr('Reload this page to load the detail interface.','페이지를 새로고침하여 상세 화면을 다시 불러와 주세요.')}</p>`);$('#modalKind').textContent=tr('METRIC DETAILS','지표 상세');};
 function hardwareLabels(){
  const h=liveNode.hardware||{},installed=h.installed_memory_bytes,bytes=installed||h.os_memory_bytes;
  return {gpu:h.gpu_name?.replace(/^NVIDIA\s+/,'')||'—',memory:bytes?`${fmt(bytes/2**30,installed&&bytes%2**30===0?0:1)} GiB`:'—',memorySource:installed?tr('INSTALLED','설치 용량'):tr('OS USABLE','OS 가용 총량'),kind:h.memory_kind==='unified'?'UNIFIED':'SYSTEM MEMORY',arch:h.architecture||'—',cores:h.logical_cpus||'—',product:h.product?.replace(/_/g,' ')||tr('COMPUTE NODE','컴퓨트 노드')};
@@ -15,10 +18,10 @@ async function api(path,body){
  const value=await response.json();if(!response.ok)throw Error(value.error||'Request failed');return value;
 }
 function graph(id,channel=0,height=64){
- const rows=liveNode.history.filter(row=>row.timestamp>Date.now()/1000-((metricExplorer?.range||5)*60));
+ const end=Date.now()/1000,start=end-5*60;
+ const rows=liveNode.history.filter(row=>row.timestamp>start&&row.timestamp<=end);
  const value=row=>Array.isArray(row[id])?row[id][channel]:row[id];
  const maximum=Math.max(0.01,...rows.flatMap(row=>Array.isArray(row[id])?row[id]:[row[id]]).map(v=>v||0))*1.12;
- const end=Date.now()/1000,start=end-(metricExplorer?.range||5)*60;
  let paths='',segment=[];
  const flush=()=>{if(segment.length>1)paths+=`<polyline class="io-trace trace-${channel}" points="${segment.join(' ')}"/>`;segment=[];};
  rows.forEach((row,i)=>{if(value(row)==null||(i&&row.timestamp-rows[i-1].timestamp>15))flush();if(value(row)!=null)segment.push(`${((row.timestamp-start)/(end-start)*240).toFixed(1)},${(height-4-value(row)/maximum*(height-8)).toFixed(1)}`);});flush();
@@ -39,7 +42,7 @@ function installedOverview(){
  const artText=template.content.querySelectorAll('svg text');artText[0].textContent=h.memory;artText[1].textContent=h.cores+' CORE';artText[2].textContent=h.arch;
  template.content.querySelector('.art-bottom').textContent=h.kind+' // SCHEMATIC';
  const hero=`<div class="hero-collapse" id="overviewHero" aria-hidden="${!preferences.hero}"><div class="hero-collapse-inner"><section class="hero"><div class="hero-copy"><div class="eyebrow muted">${escapeHTML(h.product)}</div><h2 class="hero-title">SPARK<span> /01</span></h2><p class="hero-sub">One node. Every possibility.</p><div class="hero-spec"><span>ARCH<b>${escapeHTML(h.arch)}</b></span><span>GPU<b>${escapeHTML(h.gpu)}</b></span><span>${h.memorySource}<b>${h.memory}</b></span></div></div>${template.innerHTML}</section></div></div>`;
- return pageHeading('SYSTEM OVERVIEW','01','YOUR COMPUTE. UNDER CONTROL.')+hero+`<div class="section-head"><h2>NODE TELEMETRY</h2><span>${liveNode.connected?tr('LIVE / 5 SEC','실측 / 5초'):tr('DISCONNECTED','연결 끊김')}</span></div><section class="metric-grid">${[['gpu','GPU UTILIZATION','%'],['cpu','CPU UTILIZATION','%'],['memory','UNIFIED MEMORY','GiB'],['disk','SSD USAGE','TiB'],['temp','GPU TEMPERATURE','°C'],['power','GPU POWER','W'],['network','NETWORK TRAFFIC','MB/s'],['diskio','DISK I/O','MB/s']].map(x=>liveCard(...x)).join('')}</section><p class="wide-note">${tr('0.1 · Live host telemetry. Model services are managed in Models. Inference throughput and request queues require engine adapters in a later release.','0.1 · 실제 시스템 측정값입니다. 모델 서비스는 모델 탭에서 관리합니다. 추론 속도·요청 대기열은 후속 버전의 엔진 어댑터가 필요합니다.')}</p>`;
+ return pageHeading('SYSTEM OVERVIEW','01','YOUR COMPUTE. UNDER CONTROL.')+hero+`<div class="section-head"><h2>NODE TELEMETRY</h2><span>${liveNode.connected?tr('LIVE / 5 SEC','실측 / 5초'):tr('DISCONNECTED','연결 끊김')}</span></div><section class="metric-grid">${[['gpu','GPU UTILIZATION','%'],['cpu','CPU UTILIZATION','%'],['memory','UNIFIED MEMORY','GiB'],['disk','SSD USAGE','TiB'],['temp','GPU TEMPERATURE','°C'],['power','GPU POWER','W'],['network','NETWORK TRAFFIC','MB/s'],['diskio','DISK I/O','MB/s']].map(x=>liveCard(...x)).join('')}</section><p class="wide-note">${tr('Live host telemetry. Control services and inspect supported engine status in Models.','실제 시스템 측정값입니다. 모델 탭에서 서비스를 제어하고 지원되는 엔진 상태를 확인하세요.')}</p>`;
 }
 function installedModels(){return pageHeading('MODEL BAY','02','REGISTERED SERVICES')+`<div class="model-grid">${liveNode.models.map(m=>`<article class="model-card"><div class="card-top">${badge(escapeHTML(m.state),m.state==='active'?'':'off')}</div><h2>${escapeHTML(m.name)}</h2><p>${escapeHTML(m.engine)}</p><p>${tr('Service state is not an inference readiness check.','서비스 실행 상태이며, 추론 준비 완료를 의미하지 않습니다.')}</p><div class="button-row"><button class="button" data-live-model="${escapeHTML(m.id)}" data-live-action="${m.state==='active'?'stop':'start'}" ${!m.controllable?'disabled':''}>${m.state==='active'?'STOP':'START'}</button></div></article>`).join('')||`<p class="empty-note">${tr('No services registered. Add existing user services to config.json using docs/MODELS.md.','등록된 서비스가 없습니다. docs/MODELS.md에 따라 config.json에 기존 사용자 서비스를 등록하세요.')}</p>`}</div>`;}
 render=function(animate=true){
@@ -64,28 +67,17 @@ render=function(animate=true){
  $('#sparkDisplayName').textContent=preferences.sparkName;
  if(!animate)window.scrollTo(0,previousScroll);syncHardware();translateUI();
 };
-renderMetricDetailBody=function(){
- if(!metricExplorer)return;const id=metricExplorer.id,s=liveNode.sample||{};
- const extra={gpu:['gpu_clock_mhz','clock_event_reasons'],cpu:['cores','cpu_clock_ghz'],memory:['memory_total_gib','memory_available_gib','swap_used_gib','memory_clock_mhz'],disk:['disk_total_tib'],temp:['sensors'],power:['clock_event_reasons'],network:['interfaces'],diskio:['disks']}[id];
- const stringify=v=>v==null?'—':typeof v==='object'?JSON.stringify(v,null,2):String(v);
- $('#metricDetailBody').innerHTML=`<div class="detail-stats">${detailStat(tr('CURRENT','현재'),Array.isArray(s[id])?s[id].map(v=>fmt(v)).join(' / '):fmt(s[id]))}</div><section class="detail-history"><h3>${tr('RECORDED SAMPLES','실제 측정 이력')}</h3><div class="detail-chart">${livePlot(id)}</div></section>${extra.map(key=>`<section class="detail-section"><h3>${escapeHTML(key)}</h3><pre class="live-details">${escapeHTML(stringify(s[key]))}</pre></section>`).join('')}<div class="detail-source">${escapeHTML(detailSources[id])}</div>`;
- if(id==='memory'){const h=hardwareLabels();$('#metricDetailBody').insertAdjacentHTML('afterbegin',`<p class="wide-note">${h.memorySource}: ${h.memory} · ${tr('OS usable total','OS 가용 총량')}: ${fmt(liveNode.hardware?.os_memory_bytes==null?null:liveNode.hardware.os_memory_bytes/2**30)} GiB</p>`);}
- if(id==='disk'){const row=(label,value)=>`<div class="compact-row">${label}: <strong>${value}</strong></div>`;$('#metricDetailBody').insertAdjacentHTML('afterbegin',`<section class="detail-section">${row(tr('Measured filesystem','측정 파일시스템'),escapeHTML(s.disk_mount||'—'))}${[['Used','실제 사용','disk_used_bytes'],['Filesystem total','파일시스템 전체','disk_total_bytes'],['Available to user','사용자 가용 공간','disk_available_bytes'],['Free but reserved','예약된 여유 공간','disk_reserved_free_bytes']].map(([en,ko,key])=>row(tr(en,ko),fmt(s[key]==null?null:s[key]/2**30)+' GiB')).join('')}${row(tr('Used / total capacity','전체 용량 대비 사용'),fmt(s.disk_used_percent)+'%')}${row(tr('Linux df usage (reserved space excluded)','Linux df 사용률 (예약 공간 제외)'),fmt(s.disk_df_percent,0)+'%')}<p>${tr('This is the root filesystem, not the raw physical SSD capacity or every attached drive.','루트 파일시스템 기준입니다. SSD의 물리 용량이나 연결된 모든 드라이브의 합계가 아닙니다.')}</p></section>`);}
- $('#detailStreamState').textContent=liveNode.connected?'LIVE / 5 SEC':'DISCONNECTED';$('#detailSampleTime').textContent=s.timestamp?new Date(s.timestamp*1000).toLocaleTimeString():'—';
-};
-const originalDetail=showMetricDetail;
-showMetricDetail=function(id){originalDetail(id);$('.detail-demo-note').textContent=tr('Actual samples only. Gaps mean no collection. Missing values mean unsupported or warming up.','실측 데이터만 표시합니다. 빈 구간은 미수집, —는 미지원 또는 측정 준비 중입니다.');$('.detail-refresh').textContent=tr('REFRESH','새로고침');};
 async function refreshLive(){
  if(liveNode.busy||!liveNode.token||document.hidden)return;liveNode.busy=true;
  try{
-  const [sample,settings,registered,events,hardware]=await Promise.all([...['metrics','settings','models','events'].map(p=>api(p)),liveNode.hardware?Promise.resolve(liveNode.hardware):api('hardware')]);
+  const [sample,settings,registered,events,hardware]=await Promise.all([api('metrics'),api('settings'),(state.view==='models'?api('services').then(v=>{liveNode.servicesConnected=true;return v;}).catch(()=>{liveNode.servicesConnected=false;return liveNode.services;}):Promise.resolve(liveNode.services)),api('events'),liveNode.hardware?Promise.resolve(liveNode.hardware):api('hardware')]);
   const hardwareLoaded=!liveNode.hardware;liveNode.hardware=hardware;syncHardware();if(hardwareLoaded&&state.view==='overview')render(false);
   $('#runtimeVersion').textContent='V'+settings.version;
-  liveNode.sample=sample;liveNode.history=await api('history');liveNode.models=registered;liveNode.events=events;liveNode.connected=true;liveNode.version=settings.version;preferences.sparkName=settings.spark_name;$('#connectionLabel').textContent='NODE ONLINE';const nameInput=$('#sparkNameInput');if(nameInput&&!document.activeElement.closest('#sparkNameForm'))nameInput.value=settings.spark_name;
-  if(state.view==='overview'&&document.querySelector('.metric-grid')){const template=document.createElement('template');template.innerHTML=installedOverview();document.querySelectorAll('[data-metric]').forEach(card=>{const next=template.content.querySelector('[data-metric="'+card.dataset.metric+'"]');if(next)card.innerHTML=next.innerHTML;});document.querySelector('.section-head > span').textContent=tr('LIVE / 5 SEC','실측 / 5초');$('#connectionLabel').textContent='NODE ONLINE';$('#sparkDisplayName').textContent=preferences.sparkName;translateUI();}else if(state.view!=='settings')render(false);else $('#sparkDisplayName').textContent=preferences.sparkName;
+  liveNode.sample=sample;liveNode.history=await api('history');liveNode.services=registered;liveNode.models=(registered.services||[]).map(s=>({...s,state:s.state==='running'?'active':s.state,engine:s.adapter}));liveNode.events=events;liveNode.connected=true;liveNode.version=settings.version;preferences.sparkName=settings.spark_name;$('#connectionLabel').textContent='NODE ONLINE';const nameInput=$('#sparkNameInput');if(nameInput&&!document.activeElement.closest('#sparkNameForm'))nameInput.value=settings.spark_name;
+  if(state.view==='overview'&&document.querySelector('.metric-grid')){const template=document.createElement('template');template.innerHTML=installedOverview();document.querySelectorAll('[data-metric]').forEach(card=>{const next=template.content.querySelector('[data-metric="'+card.dataset.metric+'"]');if(next)card.innerHTML=next.innerHTML;});document.querySelector('.section-head > span').textContent=tr('LIVE / 5 SEC','실측 / 5초');$('#connectionLabel').textContent='NODE ONLINE';$('#sparkDisplayName').textContent=preferences.sparkName;translateUI();}else if(state.view==='models'&&typeof refreshServiceCards==='function')refreshServiceCards();else if(state.view!=='settings')render(false);else $('#sparkDisplayName').textContent=preferences.sparkName;
   if(metricExplorer&&!$('#modal').hidden)renderMetricDetailBody();
- }catch(error){liveNode.connected=false;if(!liveNode.token||state.view!=='settings')render(false);const err=$('#liveLoginError');if(err)err.textContent=error.message;}
- finally{liveNode.busy=false;}
+ }catch(error){liveNode.connected=false;if(metricExplorer)renderMetricDetailBody();if(!liveNode.token||state.view!=='settings')render(false);const err=$('#liveLoginError');if(err)err.textContent=error.message;}
+ finally{liveNode.busy=false;if(state.view==='models'&&liveNode.token&&liveNode.servicesConnected===null)queueMicrotask(refreshLive);}
 }
 document.addEventListener('submit',async event=>{
  if(!['liveLogin','sparkNameForm'].includes(event.target.id))return;event.preventDefault();event.stopImmediatePropagation();
@@ -96,11 +88,11 @@ document.addEventListener('click',async event=>{
  if(b.dataset.liveModel){event.stopImmediatePropagation();showModal(`<h2 id="modalTitle">${b.dataset.liveAction==='stop'?'STOP':'START'} SERVICE?</h2><p>${escapeHTML(b.dataset.liveModel)}</p><p>${tr('This controls the real registered service. Stopping interrupts its active requests.','실제 등록된 서비스를 제어합니다. 정지하면 해당 서비스의 진행 중 요청이 중단됩니다.')}</p><button class="button" data-live-confirm="${escapeHTML(b.dataset.liveModel)}" data-live-operation="${b.dataset.liveAction}">CONFIRM</button>`);}
  if(b.dataset.liveConfirm){event.stopImmediatePropagation();b.disabled=true;try{await api('models/action',{id:b.dataset.liveConfirm,action:b.dataset.liveOperation});closeModal();await refreshLive();}catch(error){b.disabled=false;toast(error.message);}}
  if(b.id==='liveDiscover'){event.stopImmediatePropagation();b.disabled=true;try{const result=await api('models/discover',{});$('#discoveryResult').textContent=result.roots_configured?JSON.stringify(result):tr('Configure model_roots in config.json first.','먼저 config.json에 model_roots를 등록하세요.');}catch(error){toast(error.message);}finally{b.disabled=false;}}
- if(b.dataset.language)queueMicrotask(()=>render(false));
  if(b.id==='liveLogout'){event.stopImmediatePropagation();try{await api('logout',{});}catch{}liveNode.token='';liveNode.connected=false;sessionStorage.removeItem('spark.access');localStorage.removeItem('spark.access');render();}
  if(b.id==='resetPreferences'){event.stopImmediatePropagation();const name=preferences.sparkName;preferences={...preferenceDefaults,sparkName:name};savePreferences();setMotion(preferences.motion);render(false);}
 },true);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshLive();});
+document.addEventListener('spark-language-change',()=>render(false));
 state.jobs=[];state.events=[];state.model=null;
 if(liveNode.token){localStorage.setItem('spark.access',liveNode.token);sessionStorage.removeItem('spark.access');}
 render(false);api('info').then(info=>{liveNode.version=info.version;liveNode.authMode=info.auth_mode;render(false);refreshLive();}).catch(()=>{});setInterval(refreshLive,5000);

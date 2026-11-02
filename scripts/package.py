@@ -13,7 +13,13 @@ with tarfile.open(output / name, 'w:gz') as tar:
         path = root / item
         for file in sorted(path.rglob('*')) if path.is_dir() else [path]:
             if file.is_file() and '__pycache__' not in file.parts and file.suffix != '.pyc':
-                tar.add(file, arcname=str(file.relative_to(root)), recursive=False)
+                info = tar.gettarinfo(str(file), arcname=file.relative_to(root).as_posix())
+                info.uid = info.gid = 0
+                info.uname = info.gname = ''
+                info.mtime = 0
+                info.mode = 0o755 if file.suffix == '.sh' or file.name == 'dgx-spark-control' else 0o644
+                with file.open('rb') as stream:
+                    tar.addfile(info, stream)
 checksum = hashlib.sha256((output / name).read_bytes()).hexdigest()
 (output / 'SHA256SUMS').write_text(f'{checksum}  {name}\n')
 print(output / name)

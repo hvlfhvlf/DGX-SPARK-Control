@@ -70,6 +70,10 @@ class Models:
                 if not root.is_dir():
                     continue
                 for directory, dirs, files in os.walk(root, followlinks=False):
+                    visited += 1
+                    if visited >= 10000 or time.monotonic() - start > 2:
+                        truncated = True
+                        break
                     dirs[:] = sorted(d for d in dirs if not d.startswith(".") and not (Path(directory) / d).is_symlink())
                     if len(Path(directory).relative_to(root).parts) >= 5:
                         dirs[:] = []

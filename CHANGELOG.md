@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0~rc1 — 2026-11-02 · unpublished candidate
+
+- Redesign eight live metric details, preserving actual timestamps, missing-data semantics, compact responsive layouts and the original chip artwork.
+- Replace SSD history with capacity composition; collapse technical collection details and remove repeated statistics.
+- Add private schema-1 service/profile/asset registry, revision-checked local CLI and atomic 0600 storage. Migrate existing model registrations without starting services.
+- Add bounded asynchronous systemd-user start/stop/restart, persistent operation status, duplicate/conflict protection and stopped-profile selection.
+- Add read-only user-service discovery/registration; separate process status from ComfyUI API/queue and optional OpenAI-compatible API checks.
+- Keep logs, prompts, commands, credentials and private registry out of the browser response and distribution. Normalize archive ownership metadata.
+- Preserve existing authentication, hardware collection, package setup/tray and 480 MiB combined limit.
+- GitHub publication is on hold. See docs/releases/0.3.0~rc1.md for evidence and limits.
+
 ## 0.2.1 — 2026-10-09
 
 - Use bundled SUIT 2.0.5 Regular/SemiBold/Bold WOFF2 for Korean web UI, including labels, navigation, settings and detail dialogs.

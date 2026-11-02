@@ -180,6 +180,7 @@ function setLanguage(language){
   document.getElementById('languageCode').textContent=language.toUpperCase();
   document.querySelectorAll('[data-language]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.language===language)));
   translateUI();
+  document.dispatchEvent(new Event('spark-language-change'));
 }
 document.getElementById('languageButton').addEventListener('click',()=>{
   const menu=document.getElementById('languageMenu');menu.hidden=!menu.hidden;

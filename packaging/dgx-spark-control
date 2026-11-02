@@ -11,7 +11,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(root))
 action = sys.argv[1] if len(sys.argv) > 1 else 'setup'
 sys.argv = [sys.argv[0], *sys.argv[2:]]
-if action in ('setup', 'server', 'tray'):
+if action in ('setup', 'server', 'tray', 'services'):
     runpy.run_module('spark_control.'+action, run_name='__main__')
 elif action == 'start-tray':
     subprocess.run(['systemctl', '--user', 'import-environment', 'DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'XDG_CURRENT_DESKTOP'], capture_output=True)

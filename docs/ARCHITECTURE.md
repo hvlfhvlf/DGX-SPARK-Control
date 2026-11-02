@@ -84,3 +84,12 @@ Server + tray → dgx-spark-control.slice (combined 480 MiB limit)
 ## Web typography
 
 Korean UI uses self-hosted static SUIT 2.0.5 WOFF2 at 400/600/700. `--korean` supplies the fallback chain, `html[lang="ko"]` changes shared UI font tokens, and `--display` keeps Rajdhani numbers/English lettering. English UI retains Chakra Petch with SUIT for Korean glyph fallback. Native GTK typography is unchanged. Upstream source/license: `web/fonts/SUIT-SOURCE.md` and `SUIT-OFL.txt`.
+
+
+## 0.3.0~rc1 service architecture
+
+`services.py` owns private registry schema 1, process/API observations and one bounded asynchronous control worker. `models.py` retains explicit-root asset candidate discovery. Legacy model APIs resolve the new registry. Existing authentication schema and session semantics are unchanged.
+
+GET `/api/services`: sanitized services, selected profiles, process/API state, at most 20 recent operation summaries. POST `/api/services/action`: id, action (start/stop/restart/select), optional profile_id, revision. POST `/api/services/discover`: on-demand user-unit candidates. POST `/api/services/register`: opaque candidate_id + revision; always read-only registration. All require authentication and same-origin checks; no arbitrary command/URL input.
+
+One global cross-process file lock serializes registry writes and control operations. Persistent operation summaries (max 200) contain IDs/status/timestamps only; restart marks incomplete operations interrupted without replay. Known port/resource groups and service dependency conflicts are checked; unknown workloads are not inferred. Unit statuses share a 5-second batched cache. At most two API adapters are probed per refresh; HTTP replies are capped at 256 KiB, socket timeout 1s/deadline 2s per response. No redirects, remote probes, proxy credentials or raw workflow responses. The model view refreshes card values without replacing focused controls. Profile selection is allowed only while stopped; atomic hot switching/automatic rollback is deferred.

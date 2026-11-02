@@ -15,6 +15,7 @@ from urllib.parse import urlsplit, unquote
 from .config import Config
 from .metrics import Collector
 from .models import Models
+from .services import Services, ServiceError
 from .hardware import identity
 from .sessions import Sessions
 
@@ -31,6 +32,7 @@ class Server(ThreadingHTTPServer):
         self.collector = Collector()
         self.hardware = identity(config.directory, self.collector.gpu.name())
         self.models = Models(config)
+        self.services = Services(config)
         self.slots = threading.BoundedSemaphore(8)
         self.events = deque(maxlen=200)
         self.failure_lock = threading.Lock()
@@ -109,9 +111,18 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/history":
                 self.reply(200, self.server.collector.samples())
             elif path == "/api/models":
-                self.reply(200, self.server.models.listing())
+                try:
+                    listing = self.server.services.listing()
+                    self.reply(200, [dict(id=s['id'], name=s['name'], engine=s['adapter'], state='active' if s['state']=='running' else s['state'], controllable=s['controllable']) for s in listing['services']])
+                except (ValueError, OSError, subprocess.TimeoutExpired):
+                    self.reply(503, {"error": "Services unavailable"})
+            elif path == "/api/services":
+                try:
+                    self.reply(200, self.server.services.listing())
+                except (ValueError, OSError, subprocess.TimeoutExpired):
+                    self.reply(503, {"error": "Services unavailable"})
             elif path == "/api/events":
-                self.reply(200, list(self.server.events))
+                self.reply(200, self.server.services.recent_events())
             elif path == "/api/health":
                 self.reply(200, {"status": "ok", "version": VERSION, "collections": self.server.collector.collections, "history_samples": len(self.server.collector.history), "max_history_samples": 720, "max_http_workers": 8})
             else:
@@ -159,13 +170,20 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/settings":
                 self.reply(200, {"spark_name": self.server.config.rename(data.get("spark_name"))})
             elif path == "/api/models/action":
-                result = self.server.models.action(data.get("id"), data.get("action"))
-                self.server.events.appendleft({"timestamp": time.time(), "message": f"Service {result['action']} accepted: {result['id']}"})
+                result = self.server.services.action(data.get("id"), data.get("action"))
                 self.reply(202, result)
+            elif path == "/api/services/action":
+                self.reply(202, self.server.services.action(data.get('id'), data.get('action'), data.get('profile_id'), data.get('revision')))
+            elif path == "/api/services/discover":
+                self.reply(200, self.server.services.discover())
+            elif path == "/api/services/register":
+                self.reply(200, self.server.services.register_candidate(data.get('candidate_id'), data.get('revision')))
             elif path == "/api/models/discover":
                 self.reply(200, self.server.models.discover())
             else:
                 self.reply(404, {"error": "Unknown API"})
+        except ServiceError as error:
+            self.reply(409, {"error": str(error)})
         except (ValueError, TypeError, AttributeError):
             self.reply(400, {"error": "Invalid request or operation unavailable"})
         except (OSError, subprocess.TimeoutExpired):

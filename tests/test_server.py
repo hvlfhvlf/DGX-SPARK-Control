@@ -37,9 +37,13 @@ class ServerTests(unittest.TestCase):
 
     def test_auth_and_origin(self):
         self.assertEqual(self.request('/api/info', token=False)['mode'], 'live')
-        for path in ['/api/metrics', '/api/settings', '/api/models', '/api/history', '/api/hardware']:
+        for path in ['/api/metrics', '/api/settings', '/api/models', '/api/history', '/api/hardware', '/api/services']:
             with self.assertRaises(urllib.error.HTTPError) as error:
                 self.request(path, token=False)
+            self.assertEqual(error.exception.code, 401)
+        for path in ['/api/services/action', '/api/services/discover', '/api/services/register']:
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                self.request(path, {}, token=False)
             self.assertEqual(error.exception.code, 401)
         with self.assertRaises(urllib.error.HTTPError) as error:
             self.request('/api/settings', {'spark_name': 'Bad'}, origin='https://untrusted.example')

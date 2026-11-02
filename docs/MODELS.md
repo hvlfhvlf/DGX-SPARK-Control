@@ -1,30 +1,63 @@
-# 모델 추가·교체 / Model integration
+# 서비스·모델 연결 / Services and models
 
-0.1은 **이미 설치된 모델의 사용자 systemd 서비스**를 등록한다. 자동 다운로드·삭제·프로세스 탐색 기반 등록은 하지 않는다. 다른 LLM에게 이 문서와 AGENTS.md를 먼저 읽게 한다.
+0.3.0~rc1: **설치된 사용자 systemd 서비스**를 등록합니다. Dashboard runs no inference engine itself. Engine/weight installation and deletion remain separate tasks.
 
-`~/.local/share/dgx-spark-control/config.json` 예시:
+## Structure / 구조
 
-```json
-{
-  "schema_version": 1,
-  "spark_name": "DGX_SPARK",
-  "model_roots": ["/your/configured/models"],
-  "models": [
-    {"id": "my-llm", "name": "My LLM", "engine": "llama.cpp", "service": "my-llm.service", "allow_control": true}
-  ]
-}
+- **Service**: stable card (application, inference server or gateway), with an adapter and selected default profile.
+- **Profile**: existing `systemd-user` unit, local API probe, timeout, optional resource/port conflict groups and known dependencies.
+- **Asset**: optional operator-supplied model name/ID metadata; not a runnable command or a guessed context/quantization value.
+- Private file: `~/.local/share/dgx-spark-control/services.json`, registry_schema 1. Separate from config schema 1, password, sessions and maintenance token.
+
+기존 `config.json.models`는 첫 실행에 한 번 옮깁니다. 기존 파일은 보존하며 서비스를 자동 시작하지 않습니다. 이후 새 레지스트리만 제어 기준입니다. Legacy `/api/models` endpoints map to this registry; do not maintain two independent allowlists.
+
+## Add / 추가
+
+1. Install and validate the engine separately. Keep its existing user unit; do not replace working drivers, weights or launch scripts.
+2. In **Models → Find services**, review named user-service candidates. Registration is read-only. It does not scan every disk/port or automatically authorize control. Unrecognized unit names can be added locally.
+3. Export the private registry to a private working file **on Spark**; never paste this output into public chat or commit it:
+
+```bash
+umask 077
+dgx-spark-control services export > ~/.local/share/dgx-spark-control/services-edit.json
+# Edit this private file locally; retain existing services and profiles.
+dgx-spark-control services check --file ~/.local/share/dgx-spark-control/services-edit.json
+dgx-spark-control services apply --file ~/.local/share/dgx-spark-control/services-edit.json --expected-revision N
 ```
 
-기존 토큰 파일과 설정 필드를 보존하고 필요한 항목만 병합한다. 서버는 현재 config를 시작 시 읽으므로 파일을 수동 변경한 뒤 `systemctl --user restart dgx-spark-control`로 적용한다. 화면의 Spark 이름 저장은 재시작 없이 적용된다.
+`N` is the revision in the exported file. Apply checks schema, existing units and revision, then writes atomically; it never starts services. Conflicting edits or operations are rejected. The running server detects changes without a restart. Run as the normal Spark user, without sudo.
 
-1. 사용자에게 설치·교체 요청의 범위를 확인한다. 실행 중인 모델과 다른 사용자의 작업을 조사한다.
-2. 모델 경로·리비전·샤드·아키텍처·런타임 호환성을 검증한다. 파일명만 보고 컨텍스트·양자화·성능을 확정하지 않는다.
-3. 기존 서비스가 없으면 사용자가 승인한 실행 명령으로 별도 user systemd unit을 만든다. 모델은 대시보드 서비스의 자식으로 실행하지 않는다.
-4. `systemctl --user status my-llm.service`와 엔진 health/실제 추론을 별도로 확인한다.
-5. registry에 항목을 추가한다. `allow_control:false`로 상태만 먼저 볼 수 있다.
-6. 기존 작업에 영향을 주지 않는 조건에서 시작·중지·실패 처리를 검증한다. 모델 파일은 이 대시보드가 삭제하지 않는다.
-7. 문서·버전 변경 기록에 지원 엔진/검증 결과/남은 한계를 갱신한다. 실제 개인 경로는 공개 문서에 넣지 않는다.
+`check` reports `missing_units`; valid JSON alone does not prove engine health. `export` initializes an empty registry if absent; it is not a pure pre-install check.
 
-후속 엔진 어댑터 계약: `status`, `ready`, `model_identity`, `capabilities`, `metrics`, `start`, `stop`. Prometheus exporter 전체 스택 없이 엔진 `/metrics`를 직접 읽을 수 있으나 원본 response 크기·timeout·캐시 상한을 둔다. 서비스 active와 추론 ready를 분리한다.
+Only local operators/LLMs may change `manager.unit`, `allow_control`, probe origin, timeouts, dependencies and open_url. Web requests accept IDs/actions, never commands or arbitrary probe URLs. Use [the generic example](development/SERVICE-REGISTRY.example.json), not someone else's personal registry.
 
-후속 개발 대상: vLLM/llama.cpp/커스텀 TensorFold의 tok/s, 컨텍스트, KV cache, 대기 요청. 지원하지 않는 엔진에 다른 엔진의 지표 이름을 적용하지 않는다. ComfyUI 작업 큐는 별도 어댑터가 필요하다.
+## Replace / 교체
+
+Add a verified profile under the same service ID. Stop the service, select the new profile in Details, then Start. Selection does not delete weights or start the model. A running selected profile cannot be rebound by CLI. 기존 모델은 보존하며 다시 정지 → 이전 프로필 선택 → 시작으로 복구할 수 있습니다.
+
+Automatic stop/switch/start rollback is intentionally not shipped in this candidate. If startup times out, the process may still be running: inspect the current state and local systemd journal before retrying. A completed operation is a point-in-time observation, not a guarantee of future health.
+
+ComfyUI checkpoint additions normally do not require another service. ComfyUI updates should preserve its unit and recheck API contracts. Hermes provider configuration is distinct from its gateway service; do not assume it uses a particular local model.
+
+## Adapters / 지원 범위
+
+| Adapter | What is measured | Limits |
+| --- | --- | --- |
+| process | systemd process state | No inference readiness or job count |
+| hermes | Gateway process state | Provider connectivity and active conversations unknown |
+| comfyui | `/system_stats`, running/pending queue counts | Never returns workflow/prompt bodies; no cancel/interrupt/load action |
+| openai-compatible | `/v1/models` response and count | API readiness only; no inference benchmark or throughput/context inference |
+
+Probe origin must be `http://127.0.0.1:PORT` (1024–65535). No credentials, remote hosts, redirects or proxy environment. Authentication-required engine endpoints currently use process-only status; secret_ref support is not shipped. Model IDs/paths in raw API responses are not forwarded. `open_url` is separately configured for a browser-reachable application, not guessed from localhost.
+
+LM Studio, vLLM, llama.cpp and other engines may use existing user units for lifecycle control after local verification. Engine-specific model load/unload, sleep/wake, metrics and Docker/native-process management remain future adapters.
+
+## Runtime / 운영
+
+One in-flight control operation globally, finite worker/timeouts, at most 200 persisted operation summaries. A server restart marks unfinished operations interrupted and never replays them. Process states are batched and cached 5 seconds across clients. At most two HTTP adapter probes are selected per refresh; each response is capped at 256 KiB with socket/deadline limits. No background service polling when the model tab is not requested, except completion monitoring for an accepted operation.
+
+Registered exclusive groups and known dependency relationships block unsafe overlap. They cannot infer unregistered workloads, all resource needs or Hermes provider settings. Start refuses an occupied configured probe port when the selected service is stopped. Stop/restart require an explicit UI confirmation and may interrupt work.
+
+Logs, execution commands, private model paths and secrets remain local. A raw-log viewer is deliberately omitted. Model-root discovery in Settings is separate and does not establish engine compatibility.
+
+Read [한국어 LLM 가이드](development/SERVICE-HANDOFF.ko.md), [English handoff](development/SERVICE-HANDOFF.en.md), and [design research / future scope](development/MODEL-SERVICES-PLAN.md).
