@@ -37,11 +37,11 @@ class ServerTests(unittest.TestCase):
 
     def test_auth_and_origin(self):
         self.assertEqual(self.request('/api/info', token=False)['mode'], 'live')
-        for path in ['/api/metrics', '/api/settings', '/api/models', '/api/history', '/api/hardware', '/api/services']:
+        for path in ['/api/inference','/api/connections/settings','/api/models/roots','/api/metrics', '/api/settings', '/api/models', '/api/history', '/api/hardware', '/api/services', '/api/programs', '/api/power/status', '/api/events']:
             with self.assertRaises(urllib.error.HTTPError) as error:
                 self.request(path, token=False)
             self.assertEqual(error.exception.code, 401)
-        for path in ['/api/services/action', '/api/services/discover', '/api/services/register', '/api/services/display', '/api/services/order']:
+        for path in ['/api/models/register','/api/connections/discover','/api/connections/check','/api/connections/save','/api/models/roots','/api/services/action', '/api/services/discover', '/api/services/register', '/api/services/display', '/api/services/order', '/api/power/prepare', '/api/power/confirm', '/api/events/clear']:
             with self.assertRaises(urllib.error.HTTPError) as error:
                 self.request(path, {}, token=False)
             self.assertEqual(error.exception.code, 401)
@@ -51,6 +51,26 @@ class ServerTests(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as error:
             self.request('/api/settings', {'spark_name': 'Bad'}, origin='https://untrusted.example')
         self.assertEqual(error.exception.code, 403)
+
+    def test_power_wrong_password_does_not_log_out_and_get_never_mutates(self):
+        self.config.set_password('test-fixture-only')
+        with patch('spark_control.power.helper',side_effect=lambda action: {'enabled':True} if action=='check' else {'accepted':True}) as helper:
+            self.assertTrue(self.request('/api/power/status')['enabled'])
+            with self.assertRaises(urllib.error.HTTPError):self.request('/api/power/confirm')
+            prepared=self.request('/api/power/prepare',{'action':'reboot'})
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                self.request('/api/power/confirm',dict(action='reboot',confirmation=prepared['confirmation'],password='wrong'))
+            self.assertEqual(error.exception.code,409)
+            self.assertEqual(self.request('/api/health')['status'],'ok')
+            self.assertTrue(all(call.args[0]=='check' for call in helper.call_args_list))
+
+    def test_activity_clear_http_does_not_erase_service_operations(self):
+        self.server.services.operations=[dict(id='fixture',service_id='test',action='stop',status='completed',created_at=1,finished_at=2)]
+        self.assertEqual(len(self.request('/api/events')),1)
+        with self.assertRaises(urllib.error.HTTPError):self.request('/api/events/clear')
+        self.assertEqual(self.request('/api/events/clear',{'through':2})['cleared'],1)
+        self.assertEqual(self.request('/api/events'),[])
+        self.assertEqual(len(self.server.services.operations),1)
 
     def test_service_display_and_order_http_persistence(self):
         from spark_control.services import Registry

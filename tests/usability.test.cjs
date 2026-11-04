@@ -1,0 +1,19 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const src=fs.readFileSync(path.join(__dirname,'../web/usability.js'),'utf8');
+function context(extra={}){const c=vm.createContext({document:{addEventListener(){},getElementById(){return null;},querySelector(){return {classList:{add(){}}};}},window:{addEventListener(){}},tr:en=>en,serviceBusy:s=>['running','queued'].includes(s.operation?.status),...extra});vm.runInContext(src,c);return c;}
+test('small positive throughput is not presented as measured zero',()=>{const c=context();assert.equal(c.smallRate(null),'—');assert.equal(c.smallRate(0),'0.0');assert.equal(c.smallRate(.003),'<0.1');assert.equal(c.smallRate(2.45),'2.5');});
+test('app access separates stopped, loading, ready and process-only states',()=>{const c=context();const s={open_url:'http://localhost:9999',state:'stopped'};assert.equal(c.appAccess(s).enabled,false);assert.equal(c.appAccess({...s,state:'running',readiness:'loading'}).enabled,false);assert.equal(c.appAccess({...s,state:'running',readiness:'ready'}).label,'OPEN APP');assert.equal(c.appAccess({...s,state:'running',readiness:'unsupported'}).label,'OPEN · UNVERIFIED');assert.equal(c.appAccess({...s,state:'running',readiness:'ready',operation:{status:'queued'}}).enabled,false);});
+test('draft tracks revert and keeps unsaved other section after a save',async()=>{
+ const forms={display:{id:'serviceEditForm',values:[['name','original']]},connection:{id:'connectionForm',values:[['port','8888']]}};
+ let shown=null,closed=false;
+ const c=context({FormData:class{constructor(f){return f.values;}},document:{addEventListener(){},getElementById:id=>Object.values(forms).find(f=>f.id===id),querySelector:()=>({classList:{add(){}}})},reloadServiceDisplay:async()=>{},liveNode:{services:{revision:4}},serviceEditorDraft:{id:'test',connection:{port:'9999'}},serviceRows:()=>[{id:'test'}],connectionForm:d=>{shown=d;},closeModal:()=>{closed=true;},toast(){}});
+ c.trackFormDraft('serviceEditForm');forms.display.values=[['name','draft']];c.updateFormDraft(forms.display);assert.equal(c.hasFormDraft('serviceEditForm'),true);forms.display.values=[['name','original']];c.updateFormDraft(forms.display);assert.equal(c.hasFormDraft('serviceEditForm'),false);
+ c.trackFormDraft('connectionForm');forms.connection.values=[['port','9999']];c.updateFormDraft(forms.connection);await c.finishEditorSave('display');assert.equal(closed,false);assert.equal(shown.port,'9999');assert.equal(shown.revision,4);assert.equal(c.hasFormDraft('connectionForm'),true);
+});
+test('an active native select is not replaced by background updates',()=>{const select={tagName:'SELECT'};let writes=0;const c=context({document:{addEventListener(){},activeElement:select}});const el={contains:e=>e===select,get innerHTML(){return 'old';},set innerHTML(v){writes++;}};c.patchRetainingInteraction(el,'new');assert.equal(writes,0);});
+test('activity filter leaves source intact and includes interrupted failures',()=>{
+ const c=context({activityAction:s=>s,serviceText:s=>s});const code=fs.readFileSync(path.join(__dirname,'../web/activity.js'),'utf8');vm.runInContext(code.slice(code.indexOf('function filteredActivity('),code.indexOf('function activityRows(')),c);
+ const rows=[{service_name:'Engine A',status:'failed',action:'start'},{service_name:'Engine B',status:'interrupted',action:'start'},{service_name:'Engine A',status:'completed',action:'stop'}];assert.equal(c.filteredActivity(rows,'engine','attention').length,2);assert.equal(c.filteredActivity(rows,'engine a','all').length,2);assert.equal(rows.length,3);
+});

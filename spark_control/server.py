@@ -1,6 +1,7 @@
 """Single-process server; bounded threads, payloads, history and authentication state."""
 import argparse
 import hmac
+import hashlib
 import json
 import mimetypes
 import os
@@ -10,7 +11,7 @@ import time
 from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit, unquote
+from urllib.parse import urlsplit, unquote, parse_qs
 
 from .config import Config
 from .metrics import Collector
@@ -18,6 +19,10 @@ from .models import Models
 from .services import Services, ServiceError
 from .hardware import identity
 from .sessions import Sessions
+from .programs import Programs
+from .power import Power
+from .inference import Inference
+from .connections import Connections
 
 ROOT = Path(__file__).resolve().parent.parent
 VERSION = (ROOT / "VERSION").read_text().strip()
@@ -33,6 +38,10 @@ class Server(ThreadingHTTPServer):
         self.hardware = identity(config.directory, self.collector.gpu.name())
         self.models = Models(config)
         self.services = Services(config)
+        self.inference = Inference(self.services)
+        self.connections = Connections(self.services)
+        self.programs = Programs()
+        self.power = Power(config)
         self.slots = threading.BoundedSemaphore(8)
         self.events = deque(maxlen=200)
         self.failure_lock = threading.Lock()
@@ -121,10 +130,23 @@ class Handler(BaseHTTPRequestHandler):
                     self.reply(200, self.server.services.listing())
                 except (ValueError, OSError, subprocess.TimeoutExpired):
                     self.reply(503, {"error": "Services unavailable"})
+            elif path in ('/api/inference', '/api/connections/settings'):
+                try:
+                    sid=parse_qs(urlsplit(self.path).query).get('id',[None])[0]
+                    result=self.server.inference.snapshot(sid) if path.endswith('inference') else self.server.connections.settings(sid)
+                    self.reply(200,result)
+                except (ValueError, OSError, subprocess.TimeoutExpired):
+                    self.reply(503, {'error':'Service data unavailable'})
+            elif path == '/api/models/roots':
+                self.reply(200, self.server.models.roots())
             elif path == "/api/events":
                 self.reply(200, self.server.services.recent_events())
+            elif path == "/api/programs":
+                self.reply(200, self.server.programs.snapshot())
+            elif path == "/api/power/status":
+                self.reply(200, self.server.power.status())
             elif path == "/api/health":
-                self.reply(200, {"status": "ok", "version": VERSION, "collections": self.server.collector.collections, "history_samples": len(self.server.collector.history), "max_history_samples": 720, "max_http_workers": 8})
+                self.reply(200, {"status": "ok", "version": VERSION, "collections": self.server.collector.collections, "inference_collections": self.server.inference.collections, "history_samples": len(self.server.collector.history), "max_history_samples": 720, "max_http_workers": 8})
             else:
                 self.reply(404, {"error": "Unknown API"})
             return
@@ -169,6 +191,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply(200, {'ok': True})
             elif path == "/api/settings":
                 self.reply(200, {"spark_name": self.server.config.rename(data.get("spark_name"))})
+            elif path in ('/api/power/prepare', '/api/power/confirm'):
+                session = hashlib.sha256(self.headers.get('Authorization', '').encode()).hexdigest()
+                try:
+                    result = self.server.power.prepare(session, data.get('action')) if path.endswith('/prepare') else self.server.power.confirm(session, data)
+                except ValueError as error:
+                    raise ServiceError(str(error)) from None
+                self.reply(202 if path.endswith('/confirm') else 200, result)
             elif path == "/api/models/action":
                 result = self.server.services.action(data.get("id"), data.get("action"))
                 self.reply(202, result)
@@ -182,8 +211,20 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply(200, self.server.services.update_display(data))
             elif path == "/api/services/order":
                 self.reply(200, self.server.services.reorder(data))
+            elif path == "/api/events/clear":
+                self.reply(200, self.server.services.clear_events(data.get('through')))
             elif path == "/api/models/discover":
                 self.reply(200, self.server.models.discover())
+            elif path == '/api/models/roots':
+                self.reply(200, self.server.models.set_roots(data.get('roots')))
+            elif path == '/api/models/register':
+                self.reply(200, self.server.models.register(data.get('candidate_id'), data.get('name')))
+            elif path == '/api/connections/discover':
+                self.reply(200, self.server.connections.discover())
+            elif path == '/api/connections/check':
+                self.reply(200, self.server.connections.check(data))
+            elif path == '/api/connections/save':
+                self.reply(200, self.server.connections.save(data.get('ticket')))
             else:
                 self.reply(404, {"error": "Unknown API"})
         except ServiceError as error:

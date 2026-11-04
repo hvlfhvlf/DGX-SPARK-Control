@@ -4,6 +4,7 @@ import copy
 import fcntl
 import http.client
 import json
+import math
 import os
 import re
 import socket
@@ -11,6 +12,8 @@ import subprocess
 import threading
 import time
 import uuid
+from .startup import Observations
+from .local_http import connection
 from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -18,7 +21,7 @@ from urllib.parse import urlsplit
 ID = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}\Z")
 UNIT = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.@-]{0,127}\.service\Z")
 ADAPTERS = ('process', 'comfyui', 'openai-compatible', 'hermes')
-PROPERTIES = 'Id,LoadState,ActiveState,SubState,MainPID,MemoryCurrent'
+PROPERTIES = 'Id,LoadState,ActiveState,SubState,MainPID,MemoryCurrent,InvocationID,Result,ExecMainStartTimestampMonotonic,FragmentPath'
 
 
 class ServiceError(ValueError):
@@ -109,6 +112,9 @@ def validate(value):
             startup_timeout_seconds=seconds, exclusive_groups=groups, uses_service_ids=deps, asset_ids=refs, open_url=open_url)
         for key in ('model_name', 'quantization', 'inference_engine', 'serving_engine'):
             normalized[key] = text(p[key], 120) if p.get(key) is not None else None
+        observer=p.get('startup_observer')
+        if observer not in (None, 'tensorfold'): raise ServiceError('invalid_startup_observer')
+        normalized['startup_observer']=observer
         profiles[pid] = normalized
         result['profiles'].append(normalized)
     for s in result['services']:
@@ -173,7 +179,7 @@ class Registry:
             old = old_profiles[s['default_profile_id']]
             new_s = next((n for n in value['services'] if n['id'] == s['id']), None)
             new = new_profiles.get(new_s['default_profile_id']) if new_s else None
-            if not new or old['id'] != new['id'] or old['manager'] != new['manager'] or old['probe'] != new['probe']:
+            if not new or old['id'] != new['id'] or old['manager'] != new['manager']:
                 changed.append(old['manager']['unit'])
         if changed:
             states = system_states(changed)
@@ -208,7 +214,7 @@ def process_state(fields):
 
 def local_json(base, path):
     port = urlsplit(origin(base)).port
-    conn = http.client.HTTPConnection('127.0.0.1', port, timeout=1)
+    conn = connection(port, timeout=1)
     try:
         deadline = time.monotonic() + 2
         conn.request('GET', path, headers={'Accept': 'application/json'})
@@ -269,8 +275,16 @@ class Services:
         self.cache_lock = threading.Lock()
         self.op_lock = threading.Lock()
         self.cached_at, self.cached, self.cached_revision = 0, None, -1
+        self.observations = Observations()
         self.operation_path = self.registry.directory / 'service-operations.json'
         self.operations = []
+        self.activity_hidden_path = self.registry.directory / 'activity-hidden.json'
+        self.activity_hidden = set()
+        try:
+            if self.activity_hidden_path.stat().st_size <= 16384:
+                hidden = json.loads(self.activity_hidden_path.read_text())
+                if isinstance(hidden, list): self.activity_hidden = {v for v in hidden[-200:] if isinstance(v, str)}
+        except (OSError, ValueError): pass
         if self.operation_path.exists() and self.operation_path.stat().st_size <= 131072:
             try:
                 self.operations = json.loads(self.operation_path.read_text())[-200:]
@@ -288,7 +302,7 @@ class Services:
         with self.cache_lock:
             if self.cached is None or value['revision'] != self.cached_revision or time.monotonic() - self.cached_at >= 5:
                 states = system_states([p['manager']['unit'] for p in value['profiles']])
-                eligible = [s['id'] for s in value['services'] if s['adapter'] in ('comfyui', 'openai-compatible')]
+                eligible = [s['id'] for s in value['services']]
                 selected = set((eligible + eligible)[self.probe_cursor:self.probe_cursor + 2])
                 self.probe_cursor = (self.probe_cursor + 2) % max(1, len(eligible))
                 rows = []
@@ -296,11 +310,19 @@ class Services:
                     profiles = [p for p in value['profiles'] if p['service_id'] == service['id']]
                     p = next(p for p in profiles if p['id'] == service['default_profile_id'])
                     state = process_state(states.get(p['manager']['unit'], {}))
-                    rows.append(dict(id=service['id'], name=service['name'], adapter=service['adapter'], state=state,
+                    fields=states.get(p['manager']['unit'], {})
+                    startup=self.observations.read(p,fields,service['id'] in selected) if p.get('startup_observer') or state=='failed' else None
+                    if startup: startup.pop('invocation',None)
+                    readiness=probe(service['adapter'],p,state if service['id'] in selected or service['adapter'] in ('process','hermes') else 'unknown')
+                    previous=next((r for r in self.cached or [] if r['id']==service['id'] and r['profile_id']==p['id'] and r['state']==state),None)
+                    if service['id'] not in selected and previous and time.monotonic()-previous.get('readiness_checked_at',0)<30:
+                        readiness={k:previous[k] for k in ('readiness','running_jobs','pending_jobs','model_count')}
+                    checked=time.monotonic() if service['id'] in selected else (previous or {}).get('readiness_checked_at',0)
+                    rows.append(dict(startup=startup,id=service['id'], name=service['name'], adapter=service['adapter'], state=state,
                         profile_id=p['id'], profile_name=p['name'], controllable=p['allow_control'] and state != 'unknown',
                         model_name=p['model_name'], quantization=p['quantization'], inference_engine=p['inference_engine'], serving_engine=p['serving_engine'],
                         open_url=p['open_url'], profiles=[dict(id=q['id'], name=q['name'], controllable=q['allow_control'], state=process_state(states.get(q['manager']['unit'], {}))) for q in profiles],
-                        **probe(service['adapter'], p, state if service['id'] in selected or service['adapter'] in ('process', 'hermes') else 'unknown')))
+                        readiness_checked_at=checked,**readiness))
                 self.cached = rows
                 self.cached_revision, self.cached_at = value['revision'], time.monotonic()
             rows = copy.deepcopy(self.cached)
@@ -363,8 +385,26 @@ class Services:
         return dict(revision=saved['revision'])
 
     def recent_events(self):
+        names = {s['id']:s['name'] for s in self.registry.read()['services']}
         with self.op_lock:
-            return [dict(timestamp=o.get('finished_at', o.get('created_at', 0)), message=f"{o['service_id']} · {o['action']} · {o['status']}") for o in reversed(self.operations)]
+            return [dict(id=o['id'],timestamp=o.get('finished_at', o.get('created_at', 0)),
+                service_id=o['service_id'],service_name=names.get(o['service_id'],o['service_id']),
+                action=o['action'],status=o['status'],code=o.get('code'),
+                message=f"{o['service_id']} · {o['action']} · {o['status']}")
+                for o in reversed(self.operations) if o['id'] not in self.activity_hidden or o['status'] in ('queued','running')]
+
+    def clear_events(self, through):
+        # Clear only the reviewed, finished display history. Keep recovery state intact.
+        if isinstance(through,bool) or not isinstance(through,(int,float)) or not math.isfinite(through) or not 0 <= through <= time.time():
+            raise ServiceError('invalid_activity_cutoff')
+        with self.op_lock:
+            existing={o['id'] for o in self.operations}
+            candidates={o['id'] for o in self.operations if o['status'] not in ('queued','running') and o.get('finished_at',o.get('created_at',0))<=through}
+            hidden=(self.activity_hidden | candidates) & existing
+            atomic(self.activity_hidden_path,sorted(hidden))
+            count=len(candidates-self.activity_hidden)
+            self.activity_hidden=hidden
+            return dict(cleared=count)
 
     def _command(self, action, unit):
         result = subprocess.run(['systemctl', '--user', '--no-block', action, '--', unit], capture_output=True, timeout=5)
@@ -383,6 +423,9 @@ class Services:
                     return
             else:
                 consecutive = 0
+            if state == 'failed' and desired == 'stopped':
+                fields=system_states([unit]).get(unit,{})
+                if fields.get('MainPID','0') == '0': return
             if state in ('failed', 'unknown'):
                 raise ServiceError('service_failed')
             time.sleep(1)
@@ -420,7 +463,7 @@ class Services:
             if target['id'] != old['id']:
                 raise ServiceError('select_profile_first')
             if action in ('start', 'restart'):
-                if action == 'start' and state == 'stopped' and target['probe']:
+                if action in ('start','restart') and state in ('stopped','failed') and target['probe']:
                     with socket.socket() as sock:
                         try:
                             sock.bind(('127.0.0.1', urlsplit(target['probe']['origin']).port))
@@ -456,14 +499,20 @@ class Services:
                 self._wait(unit, 'stopped', 60)
             if op['action'] in ('start', 'restart'):
                 deadline = time.monotonic() + profile['startup_timeout_seconds']
+                fields=system_states([unit]).get(unit,{})
+                if fields.get('ActiveState')=='failed':
+                    if fields.get('MainPID','0')!='0': raise ServiceError('residual_process')
+                    self._command('reset-failed',unit)
                 self._command('start', unit)
                 self._wait(unit, 'running', profile['startup_timeout_seconds'])
-                if profile['probe'] and service['adapter'] in ('comfyui', 'openai-compatible'):
+                if profile.get('startup_observer')=='tensorfold' or (profile['probe'] and service['adapter'] in ('comfyui', 'openai-compatible')):
                     while time.monotonic() < deadline:
                         state = process_state(system_states([unit]).get(unit, {}))
                         if state != 'running':
                             raise ServiceError('service_failed')
-                        if probe(service['adapter'], profile, state)['readiness'] == 'ready':
+                        observed=self.observations.read(profile,system_states([unit]).get(unit,{})) if profile.get('startup_observer') else None
+                        ready=probe(service['adapter'],profile,state)['readiness']=='ready' if profile['probe'] else bool(observed and observed['ready'])
+                        if ready:
                             break
                         time.sleep(2)
                     else:
@@ -471,7 +520,13 @@ class Services:
             self.update_operation(op, status='completed', code='completed', finished_at=time.time())
         except Exception as error:
             # Exception strings can contain private paths or engine output: use a fixed code.
-            self.update_operation(op, status='failed', code=str(error) if isinstance(error, ServiceError) else 'operation_failed_check_local_service', finished_at=time.time())
+            code=str(error) if isinstance(error,ServiceError) else 'operation_failed_check_local_service'
+            try:
+                self.observations.clear()
+                observed=self.observations.read(profile,system_states([profile['manager']['unit']]).get(profile['manager']['unit'],{}))
+                code=observed['reason'] or code
+            except Exception: pass
+            self.update_operation(op,status='failed',code=code,finished_at=time.time())
         finally:
             self.cached_at = 0
             guard.__exit__(None, None, None)

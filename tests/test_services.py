@@ -202,5 +202,31 @@ class ServiceTests(unittest.TestCase):
             self.assertEqual(restored.operations[0]['status'],'interrupted')
             run.assert_not_called()
 
+    def test_activity_clear_keeps_active_and_newer_events_and_survives_restart(self):
+        now=time.time()
+        self.svc.operations=[dict(id='old',service_id='test',action='start',status='failed',created_at=now-30,finished_at=now-20),
+            dict(id='active',service_id='test',action='start',status='running',created_at=now-10),
+            dict(id='new',service_id='test',action='stop',status='completed',created_at=now-3,finished_at=now-2)]
+        from spark_control.services import atomic
+        atomic(self.svc.operation_path,self.svc.operations)
+        original=self.svc.operation_path.read_bytes()
+        self.assertEqual(self.svc.recent_events()[0]['service_name'],'Test')
+        self.assertEqual(self.svc.clear_events(now-15)['cleared'],1)
+        self.assertEqual({e['id'] for e in self.svc.recent_events()},{'active','new'})
+        self.assertEqual(self.svc.operation_path.read_bytes(),original)
+        self.assertEqual(self.svc.activity_hidden_path.stat().st_mode & 0o777,0o600)
+        restored=Services(self.config)
+        self.assertEqual({e['id'] for e in restored.recent_events()},{'active','new'})
+        self.assertEqual(restored.clear_events(now)['cleared'],1) # New completion; interrupted active is newer than snapshot.
+        self.assertEqual(restored.clear_events(now)['cleared'],0)
+
+    def test_activity_clear_rejects_invalid_cutoffs_and_failed_save_keeps_visibility(self):
+        self.svc.operations=[dict(id='old',service_id='test',action='stop',status='completed',created_at=1,finished_at=2)]
+        for value in [None,True,'2',-1,float('nan'),float('inf'),time.time()+600]:
+            with self.assertRaises(ServiceError):self.svc.clear_events(value)
+        with patch('spark_control.services.atomic',side_effect=OSError('disk full')):
+            with self.assertRaises(OSError):self.svc.clear_events(3)
+        self.assertEqual(len(self.svc.recent_events()),1)
+
 
 if __name__=='__main__':unittest.main()

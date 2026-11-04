@@ -97,3 +97,13 @@ One global cross-process file lock serializes registry writes and control operat
 ### Service display mutations (0.3.0)
 
 Authenticated, same-origin POST `/api/services/display`: `{id, profile_id, revision, fields}`. Exact field allowlist: service `name`, profile `model_name`, `quantization`, `inference_engine`, `serving_engine`. POST `/api/services/order`: `{ids, revision}`, an exact ID permutation. Both use the registry lock, revision compare-and-swap and atomic 0600 persistence; they never issue a lifecycle command or change a launch binding. Labels are escaped on output. No new background worker or polling is added.
+
+
+## Optional power controls
+A local administrator may grant the selected OS account only the normal login1 reboot/power-off polkit actions. No multiple-session or ignore-inhibitor permissions are granted. The dashboard retains NoNewPrivileges, RestrictSUIDSGID and its existing slice limits. Single-use session/action-bound confirmation plus password re-entry is enforced by the web server. A fixed user timer delays dispatch for three seconds and rechecks blockers before calling login1. GET never schedules an action.
+
+
+## 0.3.1 additions
+`inference.py`: shared on-demand five-second cache, at most four 720-sample streams; same-session counter baselines and gap/reset handling. GET /api/inference?id=<registered-service> uses fixed metrics/health/models paths. `local_http.py` prefers loopback; connection refusal may fall back only to an IPv4 address present in OS interface inventory and listening on the exact port in /proc/net/tcp. No DNS, redirects or external destinations.
+`connections.py`: authenticated discover/check/save flow with bounded 120-second one-use review tickets, current registry revision and user-unit validation. Existing units only. New profiles share the same registry locks. API observation changes do not change executable bindings.
+`models.py`: authenticated roots and registration APIs with capped explicit-root discovery and private inventory; filenames are not engine compatibility claims.

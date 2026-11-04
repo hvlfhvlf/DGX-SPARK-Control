@@ -171,7 +171,7 @@ function translateUI(){
     }
     sourceAttrs.set(el,cached);
   });
-  const title=uiLanguage==='ko'?{overview:'개요',models:'모델',jobs:'작업',logs:'기록',settings:'설정'}[state.view]:navNames[state.view];
+  const title=uiLanguage==='ko'?{overview:'개요',models:'모델',jobs:'프로그램',logs:'기록',settings:'설정'}[state.view]:navNames[state.view];
   document.title=`${title} / SPARK CONTROL`;
 }
 function closeLanguageMenu(){document.getElementById('languageMenu').hidden=true;document.getElementById('languageButton').setAttribute('aria-expanded','false');}

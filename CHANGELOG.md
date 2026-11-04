@@ -1,4 +1,52 @@
+# 0.3.1 — 2026-11-04
+
+- Measured inference throughput for supported TensorFold/vLLM/Strata endpoints, bounded history and selected LLM details.
+- Reviewed discovery/registration of existing user services, editable connections and private model-file inventory.
+- Startup status/progress, explicit failed-start retry, Programs with demand-driven CPU/RSS/uptime.
+- Optional two-stage password-confirmed power actions, date-grouped searchable/filterable activity and confirmed clear.
+- Compact responsive layout, memory usage percentage, retained edit drafts and consistent typography.
+- Fix response-body deadlines, stale-session 401 handling, LLM selection request races and stale context metadata.
+- Bilingual installation/user guides and privacy-reviewed ARM64 package. Existing private settings, logins and model processes are preserved.
+
+Candidate notes below describe historical development stages, now incorporated into 0.3.1. See docs/releases/0.3.1.md for current validation and limitations.
+
+# 0.3.1~rc10 — request and metadata correctness (local candidate)
+
+Keep the API deadline active through response body consumption. Stale unauthorized replies cannot revoke a newer browser login. Ignore an older inference response after selecting another LLM and immediately fetch the current selection. Clear cached context metadata before refreshing the model endpoint, avoiding an earlier engine run's context limit after a failed lookup. Add failing-before/passing-after regression tests for all four findings. No lifecycle commands or authentication schema changes.
+
+# 0.3.1~rc9 — visual consistency (local candidate)
+
+Remove the selected LLM monogram, use the existing shared interface font in inference headings/units, and left-align activity dates beside disclosure markers. No backend or control changes.
+
+# 0.3.1~rc8 — usability audit fixes (local candidate)
+
+Preserve unsaved input and disclosure/focus during refresh; retain editor drafts on failures and across section saves; readiness-aware app links; compact mobile cards and sticky editing actions; clearer model inventory and package update guidance; activity search/filter/date folding; service-process filtering and low-rate display. No auth/model command changes.
+
+# 0.3.1~rc4 — local candidate
+
+- Add demand-driven TensorFold/vLLM/Strata throughput and active LLM panel.
+- Add reviewed web registration/control of existing user services and new profiles.
+- Add editable model scan roots and private model file inventory.
+- Preserve model processes, authentication and package memory limits. Not published.
+
 # Changelog
+
+## 0.3.1~rc3 (local candidate)
+- Remove the header version/LIVE badge; retain version details in Settings and the footer.
+- Compact activity row padding and date spacing on desktop and phones without truncating failure guidance.
+
+## 0.3.1~rc2 — local validation candidate
+
+- Date-grouped activity with localized actions/statuses and persistent CLEAR display history.
+- Header SVG power button opens restart/shutdown selection; existing two-step password confirmation retained.
+- Preserves running operations and newer events when clearing. No GitHub publication.
+
+## 0.3.1~rc1 — local validation candidate
+
+- Real engine startup progress, explicit readiness, failed-start recovery and warnings.
+- Read-only Programs tab with demand-driven CPU/RSS/uptime.
+- Optional password-confirmed, two-stage Spark power controls.
+- No public release or GitHub upload for this candidate.
 
 ## 0.3.0 — 2026-11-03
 
@@ -82,3 +130,14 @@
 - LLM handoff, architecture, model integration, installation and release documentation.
 
 Limits: request queue, inference throughput and engine readiness adapters are future work; long-term persistent telemetry is disabled. Consult docs/releases/0.1.0.md for validation status.
+# 0.3.1~rc5 — local candidate
+
+- Replace the overview memory clock placeholder with used memory / OS-usable memory percentage, to one decimal place.
+- Preserve the existing right-aligned reading, gauge, card size and phone two-column layout. Missing or disconnected readings remain unknown.
+
+
+## 0.3.1~rc6 (local candidate)
+- Removed the standalone CONNECTION card action; grouped Display and Connection under EDIT with section drafts and compact two-column navigation. Existing check/review/save and revision guards remain.
+
+## 0.3.1~rc7 (local candidate)
+- Aligned equal-width inference/LLM panels to the telemetry grid. Matched headers, compact chart/body spacing, bottom-aligned engine actions and responsive stacked panels.

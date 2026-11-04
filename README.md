@@ -1,6 +1,8 @@
 # DGX-SPARK-Control
 
-**0.3.0 · NVIDIA DGX Spark · Ubuntu 24.04 ARM64**
+**0.3.1 · NVIDIA DGX Spark · Ubuntu 24.04 ARM64**
+
+Measured inference throughput, reviewed service registration, model-file inventory and compact live views. 실측 추론 처리량·서비스 등록·모델 파일 목록·실시간 상태를 한곳에서 확인합니다.
 
 **간편 설치: [한국어](docs/QUICKSTART.ko.md) | Easy installation: [English](docs/QUICKSTART.en.md)**
 
@@ -8,16 +10,16 @@
 
 A lightweight dashboard hosted on your Spark, accessed through your browser and Tailscale. 한국어·영어 설정 마법사, 실제 하드웨어 상태, 로컬 트레이, 등록한 모델 서비스 제어를 제공합니다.
 
-> New in 0.3.0: service start/stop/restart, editable model/engine labels, shared card ordering and compact live metric details.
-> 0.3.0: 서비스 제어·표시 정보 편집·순서 변경·실측 상세창을 제공합니다. 개인 설정과 모델 파일은 설치 패키지에 포함하지 않습니다.
+> New in 0.3.1: inference charts, service connection editing, Programs, searchable activity and optional two-stage power controls. Includes login/request race fixes.
+> 0.3.1: 추론 그래프·서비스 연결 편집·프로그램 목록·기록 검색·선택적 2단계 전원 제어를 제공합니다. 개인 설정과 모델 파일은 설치 패키지에 포함하지 않습니다.
 
 ## Install / 설치
 
-1. Download **dgx-spark-control_0.3.0_arm64.deb** from [Releases](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.3.0) onto Spark. Spark에 설치 파일을 다운로드합니다.
+1. Download **dgx-spark-control_0.3.1_arm64.deb** from [Releases](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.3.1) onto Spark. Spark에 설치 파일을 다운로드합니다.
 2. Open it in the software installer, or run the following in its download folder. 파일을 열어 설치하거나 다운로드 폴더에서 실행합니다:
 
 ```bash
-sudo apt install ./dgx-spark-control_0.3.0_arm64.deb
+sudo apt install ./dgx-spark-control_0.3.1_arm64.deb
 ```
 
 3. Open **DGX-SPARK-Control Setup / 초기 설정** from Applications, or run as your normal user (without sudo):
@@ -59,13 +61,13 @@ The archive remains available for existing script installations; do not mix upda
 - On-demand shared metrics at most once per five seconds; no client requests means no collection.
 - Server + tray combined limit: **480 MiB = 503,316,480 bytes**, no swap. Models, browsers, setup and Tailscale are outside this budget.
 - No pip, npm, Docker, database server or resident LLM required.
-- Hard limits are not performance proof. [Actual validation and limitations](docs/releases/0.3.0.md).
+- Hard limits are not performance proof. [Actual validation and limitations](docs/releases/0.3.1.md).
 
 ## Features and limits
 
 Live GPU/CPU utilization, unified memory, GPU temperature/power, supported clocks, root filesystem usage, physical network/disk I/O, real-history details, shared display name, explicit user-service controls and bounded model candidate discovery. Unsupported measurements display `—`.
 
-Service/profile registration, start/stop/restart, stopped-profile selection, display-label editing, shared card ordering and on-demand service discovery are available. ComfyUI API/queue counts and optional OpenAI-compatible model-list checks are separate from process state. Inference speed, global queues, engine-specific model load/unload, automatic installation/deletion and automatic switch rollback are not implemented. [Model guide](docs/MODELS.md).
+Service/profile registration, start/stop/restart, stopped-profile selection, display-label editing, shared card ordering and on-demand service discovery are available. Supported TensorFold/vLLM/Strata endpoints provide measured throughput; existing user services can be registered through the web UI. ComfyUI queue counts and LLM readiness remain separate from process state. Global queues, engine-specific model load/unload, automatic installation/deletion and automatic switch rollback are not implemented. [Model guide](docs/MODELS.md).
 
 ## Privacy / 개인정보
 

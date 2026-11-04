@@ -1,6 +1,6 @@
 # 서비스·모델 연결 / Services and models
 
-0.3.0: **설치된 사용자 systemd 서비스**를 등록합니다. Dashboard runs no inference engine itself. Engine/weight installation and deletion remain separate tasks.
+0.3.1: **설치된 사용자 systemd 서비스**를 등록합니다. Dashboard runs no inference engine itself. Engine/weight installation and deletion remain separate tasks.
 
 ## Structure / 구조
 
@@ -14,8 +14,8 @@
 ## Add / 추가
 
 1. Install and validate the engine separately. Keep its existing user unit; do not replace working drivers, weights or launch scripts.
-2. In **Models → Find services**, review named user-service candidates. Registration is read-only. It does not scan every disk/port or automatically authorize control. Unrecognized unit names can be added locally.
-3. Export the private registry to a private working file **on Spark**; never paste this output into public chat or commit it:
+2. **Models → Add service** lists existing user services. Select one, enter its local API port, explicitly enable control if needed, then check and save. Earlier releases used read-only Find services plus local CLI registration. No whole-disk/port scan or automatic control authorization is performed.
+3. For advanced settings, alternatively export the private registry to a private working file **on Spark**; never paste this output into public chat or commit it:
 
 ```bash
 umask 077
@@ -29,13 +29,13 @@ dgx-spark-control services apply --file ~/.local/share/dgx-spark-control/service
 
 `check` reports `missing_units`; valid JSON alone does not prove engine health. `export` initializes an empty registry if absent; it is not a pure pre-install check.
 
-Only local operators/LLMs may change `manager.unit`, `allow_control`, probe origin, timeouts, dependencies and open_url. Web requests accept IDs/actions, never commands or arbitrary probe URLs. Use [the generic example](development/SERVICE-REGISTRY.example.json), not someone else's personal registry.
+The web Connection editor can bind a discovered existing user unit and configure a local API port, adapter, control permission and app URL after review. Advanced timeouts/dependencies remain local registry settings. Web requests accept IDs/actions, never commands or arbitrary probe URLs. Use [the generic example](development/SERVICE-REGISTRY.example.json), not someone else's personal registry.
 
 ## Replace / 교체
 
 Add a verified profile under the same service ID. Stop the service, select the new profile in Details, then Start. Selection does not delete weights or start the model. A running selected profile cannot be rebound by CLI. 기존 모델은 보존하며 다시 정지 → 이전 프로필 선택 → 시작으로 복구할 수 있습니다.
 
-Automatic stop/switch/start rollback is intentionally not shipped in 0.3.0. If startup times out, the process may still be running: inspect the current state and local systemd journal before retrying. A completed operation is a point-in-time observation, not a guarantee of future health.
+Automatic stop/switch/start rollback is intentionally not shipped in 0.3.1. If startup times out, the process may still be running: inspect the current state and local systemd journal before retrying. A completed operation is a point-in-time observation, not a guarantee of future health.
 
 ComfyUI checkpoint additions normally do not require another service. ComfyUI updates should preserve its unit and recheck API contracts. Hermes provider configuration is distinct from its gateway service; do not assume it uses a particular local model.
 
@@ -46,15 +46,15 @@ ComfyUI checkpoint additions normally do not require another service. ComfyUI up
 | process | systemd process state | No inference readiness or job count |
 | hermes | Gateway process state | Provider connectivity and active conversations unknown |
 | comfyui | `/system_stats`, running/pending queue counts | Never returns workflow/prompt bodies; no cancel/interrupt/load action |
-| openai-compatible | `/v1/models` response and count | API readiness only; no inference benchmark or throughput/context inference |
+| openai-compatible | `/v1/models` response and count | Readiness probe; separate inference adapters read supported metrics without running a benchmark |
 
 Probe origin must be `http://127.0.0.1:PORT` (1024–65535). No credentials, remote hosts, redirects or proxy environment. Authentication-required engine endpoints currently use process-only status; secret_ref support is not shipped. Model IDs/paths in raw API responses are not forwarded. `open_url` is separately configured for a browser-reachable application, not guessed from localhost.
 
-LM Studio, vLLM, llama.cpp and other engines may use existing user units for lifecycle control after local verification. Engine-specific model load/unload, sleep/wake, metrics and Docker/native-process management remain future adapters.
+LM Studio, vLLM, llama.cpp and other engines may use existing user units for lifecycle control after local verification. Engine-specific model load/unload, sleep/wake and Docker/native-process management remain future adapters. Supported inference metrics are described below.
 
 ## Runtime / 운영
 
-One in-flight control operation globally, finite worker/timeouts, at most 200 persisted operation summaries. A server restart marks unfinished operations interrupted and never replays them. Process states are batched and cached 5 seconds across clients. At most two HTTP adapter probes are selected per refresh; each response is capped at 256 KiB with socket/deadline limits. No background service polling when the model tab is not requested, except completion monitoring for an accepted operation.
+One in-flight control operation globally, finite worker/timeouts, at most 200 persisted operation summaries. A server restart marks unfinished operations interrupted and never replays them. Process states are batched and cached 5 seconds across clients. At most two HTTP adapter probes are selected per refresh; each response is capped at 256 KiB with socket/deadline limits. Service polling is demand-driven by visible dashboard views, except completion monitoring for an accepted operation.
 
 Registered exclusive groups and known dependency relationships block unsafe overlap. They cannot infer unregistered workloads, all resource needs or Hermes provider settings. Start refuses an occupied configured probe port when the selected service is stopped. Stop/restart require an explicit UI confirmation and may interrupt work.
 
@@ -73,10 +73,27 @@ The card title uses the full model name, followed by quantization and smaller in
 
 ## Display editing and order / 표시 편집·순서
 
-Models → pencil edits `name` (service, required, max 80) and the selected profile's `model_name`, `quantization`, `inference_engine`, `serving_engine` (optional, max 120 each; blank clears). Order saves an exact permutation of all service IDs. Both require authentication, same-origin requests and the current registry revision. Conflicting edits/operations are rejected. Saving does not start, stop or reconfigure any engine. The same registry is shared across devices and survives dashboard restart. Existing launches, app URLs and control permissions cannot be edited here.
+Models → pencil edits `name` (service, required, max 80) and the selected profile's `model_name`, `quantization`, `inference_engine`, `serving_engine` (optional, max 120 each; blank clears). Order saves an exact permutation of all service IDs. Both require authentication, same-origin requests and the current registry revision. Conflicting edits/operations are rejected. Saving does not start, stop or reconfigure any engine. The same registry is shared across devices and survives dashboard restart. Display edits do not change launches or permissions. The adjacent Connection section edits reviewed API/app/control settings; executable commands remain local.
 
-모델 탭의 연필 버튼은 표시 정보만 편집합니다. 순서 변경은 전체 서비스 ID의 순서만 저장합니다. 활성 프로필이 바뀌거나 다른 기기가 먼저 저장하면 창을 다시 열어 최신 정보를 확인합니다. 엔진/모델 설치·실행 설정 변경은 기존 로컬 CLI 절차를 사용합니다.
+모델 탭의 연필 버튼은 표시 정보와 연결 설정을 별도 탭으로 편집합니다. 순서 변경은 전체 서비스 ID의 순서만 저장합니다. 활성 프로필이 바뀌거나 다른 기기가 먼저 저장하면 창을 다시 열어 최신 정보를 확인합니다. 엔진/모델 설치·실행 설정 변경은 기존 로컬 CLI 절차를 사용합니다.
 
 App access is configured separately from dashboard access. A Tailscale connection does not override an engine app’s device allowlist, bind address, authentication or network policy. No personal ComfyUI gateway or Tailscale policy is bundled with this package.
 
 대시보드 접속과 앱 접속은 별도입니다. Tailscale 연결만으로 앱 자체의 기기 허용 목록·바인딩 주소·인증·접근 정책이 해제되지 않습니다. 이 패키지는 개인 ComfyUI 게이트웨이나 Tailscale 정책을 배포하지 않습니다.
+
+
+### Startup observer
+Optional profile field `startup_observer: "tensorfold"` reads bounded journal records scoped to the current systemd InvocationID. Layer count measures weight loading, not total startup time. The serving marker is distinct from an API probe. Unknown engines omit percentages. Failed Start clears the unit start-limit only when MainPID is zero; it does not kill other processes or change memory configuration.
+
+
+## Inference and web registration
+Overview shows aggregate output/input token throughput on the left and the selected LLM service on the right. TensorFold, vLLM and Strata adapters expose only available metrics. Input is token-counter delta per elapsed second, not prefill compute speed. Output uses an engine window or counter delta; inspect Measurement notes for its source. Completed-request counters may be bursty. No prompts or completions are collected.
+
+History is collected on demand every 5 seconds while Overview is open, with 5m/30m/1h views. Up to four streams of 720 samples are held in memory and cleared on restart. Missing samples remain gaps. Zero is valid for an idle engine.
+
+Models → Add service → select an existing user systemd service → choose adapter, local API port and optional app URL → enable control if desired → Check connection → Save. Saving does not start it. Stopped services can be registered with unverified API readiness, then started. The API is local to this Spark: if loopback refuses the connection, only an OS-verified local IPv4 listener may be used. No arbitrary shell commands or remote probe URLs are accepted. Connection settings edit observation and control settings; they do not change the engine command.
+
+An additional existing service can be added as a profile to an existing card. Stop before selecting a different profile, then start. Model files lets you save scan roots, discover candidates and register filenames/display names in a private inventory. Inventory registration does not create launch commands. Engine/weight download or deletion, direct Docker/system-service control and generating engine launch templates from files remain outside this release.
+
+### Editor navigation
+Existing connection settings now live under the card pencil → Connection, alongside Display. Section drafts survive switching; each section saves separately with its existing revision checks. Cards no longer have a separate CONNECTION button. Registration, API security and lifecycle behavior are unchanged.
