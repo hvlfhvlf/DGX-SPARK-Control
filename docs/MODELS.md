@@ -1,6 +1,6 @@
 # 서비스·모델 연결 / Services and models
 
-0.3.1: **설치된 사용자 systemd 서비스**를 등록합니다. Dashboard runs no inference engine itself. Engine/weight installation and deletion remain separate tasks.
+0.3.2: **설치된 사용자 systemd 서비스**를 등록합니다. Dashboard runs no inference engine itself. Engine/weight installation and deletion remain separate tasks.
 
 ## Structure / 구조
 
@@ -59,6 +59,8 @@ One in-flight control operation globally, finite worker/timeouts, at most 200 pe
 Registered exclusive groups and known dependency relationships block unsafe overlap. They cannot infer unregistered workloads, all resource needs or Hermes provider settings. Start refuses an occupied configured probe port when the selected service is stopped. Stop/restart require an explicit UI confirmation and may interrupt work.
 
 Logs, execution commands, private model paths and secrets remain local. A raw-log viewer is deliberately omitted. Model-root discovery in Settings is separate and does not establish engine compatibility.
+
+Start with the copyable [한국어 agent playbook](LLM-GUIDE.ko.md) or [English agent playbook](LLM-GUIDE.en.md).
 
 Read [한국어 LLM 가이드](development/SERVICE-HANDOFF.ko.md), [English handoff](development/SERVICE-HANDOFF.en.md), and [design research / future scope](development/MODEL-SERVICES-PLAN.md).
 

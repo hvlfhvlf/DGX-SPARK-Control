@@ -1,6 +1,6 @@
 'use strict';
 // Installed runtime. The original UI is retained; simulated telemetry never runs here.
-const liveNode={sample:null,history:[],models:[],services:{revision:0,services:[]},servicesConnected:null,events:[],hardware:null,connected:false,busy:false,version:'0.1.2',authMode:'password',token:localStorage.getItem('spark.access')||sessionStorage.getItem('spark.access')||''};
+const liveNode={sample:null,history:[],models:[],services:{revision:0,services:[]},servicesConnected:null,events:[],hardware:null,connected:false,statusChecked:false,busy:false,version:'—',authMode:'password',token:localStorage.getItem('spark.access')||sessionStorage.getItem('spark.access')||''};
 const tr=(en,ko)=>uiLanguage==='ko'?ko:en;
 const fmt=(v,places=1)=>v==null?'—':Number(v).toFixed(places);
 // Fail closed if a detail asset fails to load; never fall back to prototype fixtures.
@@ -16,7 +16,7 @@ async function api(path,body){
  try{
   const response=await fetch('/api/'+path,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+requestToken,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,signal:controller.signal});
   if(response.status===401){if(liveNode.token===requestToken){liveNode.token='';sessionStorage.removeItem('spark.access');localStorage.removeItem('spark.access');}throw Error(path==='login'?tr('Password not accepted','비밀번호가 일치하지 않습니다'):tr('Please sign in again','다시 로그인해 주세요'));}
-  const value=await response.json();if(!response.ok)throw Error(value.error||'Request failed');return value;
+  const value=await response.json();if(!['info','login'].includes(path)&&liveNode.token!==requestToken)throw Error(tr('Session changed. Please try again.','로그인 상태가 바뀌었습니다. 다시 시도하세요.'));if(!response.ok)throw Error(value.error||'Request failed');return value;
  }finally{clearTimeout(timeout);}
 }
 function graph(id,channel=0,height=64){
@@ -49,31 +49,34 @@ function installedOverview(){
 }
 function installedModels(){return pageHeading('MODEL BAY','02','REGISTERED SERVICES')+`<div class="model-grid">${liveNode.models.map(m=>`<article class="model-card"><div class="card-top">${badge(escapeHTML(m.state),m.state==='active'?'':'off')}</div><h2>${escapeHTML(m.name)}</h2><p>${escapeHTML(m.engine)}</p><p>${tr('Service state is not an inference readiness check.','서비스 실행 상태이며, 추론 준비 완료를 의미하지 않습니다.')}</p><div class="button-row"><button class="button" data-live-model="${escapeHTML(m.id)}" data-live-action="${m.state==='active'?'stop':'start'}" ${!m.controllable?'disabled':''}>${m.state==='active'?'STOP':'START'}</button></div></article>`).join('')||`<p class="empty-note">${tr('No services registered. Add existing user services to config.json using docs/MODELS.md.','등록된 서비스가 없습니다. docs/MODELS.md에 따라 config.json에 기존 사용자 서비스를 등록하세요.')}</p>`}</div>`;}
 render=function(animate=true){
+ if(state.view!=='settings'||!liveNode.token){nameDraft=null;nameDraftDirty=false;}
  let html;
  if(!liveNode.token){const password=liveNode.authMode==='password';html=pageHeading('CONNECT TO SPARK','01','DGX-SPARK-CONTROL / '+liveNode.version)+`<section class="panel auth-panel"><h2>${password?tr('Password','비밀번호'):tr('Access token','접속 토큰')}</h2><p>${password?tr('Enter your installation password. This device stays signed in until you log out or reset the password.','설치할 때 설정한 비밀번호를 입력하세요. 로그아웃하거나 비밀번호를 재설정하기 전까지 이 기기에서 유지됩니다.'):tr('Password setup is pending. Use the local access token or run scripts/set-password.py on Spark.','비밀번호 설정 전입니다. 로컬 접속 토큰을 사용하거나 Spark에서 scripts/set-password.py를 실행하세요.')}</p><form id="liveLogin"><input type="password" id="liveToken" autocomplete="${password?'current-password':'off'}" required aria-label="${password?tr('Password','비밀번호'):'Access token'}"><button class="button">${tr('SIGN IN','로그인')}</button></form><p id="liveLoginError" role="status"></p></section>`;}
  else if(state.view==='overview')html=installedOverview();
  else if(state.view==='models')html=installedModels();
  else if(state.view==='settings'){
   const template=document.createElement('template');template.innerHTML=settingsView();
-  const personal=template.content.querySelector('.settings-primary > section');personal.querySelector('#sparkNameForm button').insertAdjacentHTML('afterend',`<button type="button" class="button secondary" id="cancelSparkName">${tr('CANCEL EDIT','입력 취소')}</button>`);
+  const personal=template.content.querySelector('.settings-primary > section');
   const jobsOption=personal.querySelector('option[value=jobs]');if(jobsOption){jobsOption.textContent=tr('Programs','프로그램');jobsOption.setAttribute('translate','no');}
+  personal.querySelector('.panel-top .tiny').textContent=tr('Name: shared · Appearance: this browser','이름: 공용 · 화면: 현재 브라우저');
+  personal.querySelector('#heroToggle').closest('.setting-row').querySelector('p').textContent=tr('Turn on to show the overview artwork; turn off to focus on telemetry.','켜면 개요 그래픽을 표시하고, 끄면 시스템 상태를 먼저 보여줍니다.');
   personal.querySelector('.spark-name-row p').textContent=tr('Shared display name saved on this Spark. The system hostname is unchanged.','이 Spark에 저장되는 공용 표시 이름입니다. 시스템 호스트명은 바뀌지 않습니다.');
   personal.querySelector('#resetPreferences').textContent=tr('RESET APPEARANCE','화면 설정 초기화');
   personal.querySelector('#resetPreferences').previousElementSibling.querySelector('p').textContent=tr('Appearance is saved in this browser. The Spark name is shared across devices.','화면 설정은 이 브라우저에 저장됩니다. Spark 이름은 기기 간 공유됩니다.');
-  html=pageHeading('SYSTEM SETTINGS','05','MAKE THIS SPACE YOURS.')+personal.outerHTML+`<section class="panel runtime-panel"><h2>DGX-SPARK-Control ${liveNode.version}</h2><p>${tr('One Python process · demand-driven 5s collection · 720 history samples · 480 MiB service limit.','Python 프로세스 1개 · 요청 시 5초 간격 수집 · 최대 이력 720개 · 서비스 상한 480 MiB.')}</p><div class="setting-row"><span>Interface motion</span>${switchInput('motionToggle',state.motion,'Interface motion')}</div><button class="button secondary" id="liveDiscover">${tr('SCAN MODEL FOLDERS','모델 폴더 검색')}</button><p id="discoveryResult"></p><p>${tr('Package install: install the new .deb with apt. Settings and logins are preserved. Archive installs use their original update method.','패키지 설치판은 새 .deb를 apt로 설치하세요. 설정과 로그인은 유지됩니다. 압축판은 기존 업데이트 방식을 사용하세요.')}</p><p><a href="https://github.com/hvlfhvlf/DGX-SPARK-Control/releases" target="_blank" rel="noopener noreferrer">${tr('Releases & installation guide','배포 버전과 설치 안내')}</a></p><button class="button secondary" id="liveLogout">${tr('LOG OUT THIS DEVICE','이 기기 로그아웃')}</button></section>`+(typeof powerPanel==='function'?powerPanel():'');
+  html=pageHeading('SYSTEM SETTINGS','05','MAKE THIS SPACE YOURS.')+personal.outerHTML+`<section class="panel runtime-panel"><h2>DGX-SPARK-Control ${liveNode.version}</h2><p>${tr('One Python process · demand-driven 5s collection · 720 history samples · 480 MiB service limit.','Python 프로세스 1개 · 요청 시 5초 간격 수집 · 최대 이력 720개 · 서비스 상한 480 MiB.')}</p><div class="setting-row"><span>Interface motion</span>${switchInput('motionToggle',state.motion,'Interface motion')}</div><button class="button secondary" id="liveDiscover">${tr('SCAN MODEL FOLDERS','모델 폴더 검색')}</button><p id="discoveryResult"></p><p>${tr('Package install: install the new .deb with apt. Settings and logins are preserved. Archive installs use their original update method.','패키지 설치판은 새 .deb를 apt로 설치하세요. 설정과 로그인은 유지됩니다. 압축판은 기존 업데이트 방식을 사용하세요.')}</p><p><a href="https://github.com/hvlfhvlf/DGX-SPARK-Control/releases" target="_blank" rel="noopener noreferrer">${tr('Releases & installation guide','배포 버전과 설치 안내')}</a></p><button class="button secondary" id="liveLogout">${tr('LOG OUT THIS DEVICE','이 기기 로그아웃')}</button></section>`;
  }else if(state.view==='logs')html=typeof activityView==='function'?activityView():'';
  else html=typeof programsView==='function'?programsView():'';
  const previousScroll=window.scrollY;$('#main').innerHTML=`<div class="view${animate?'':' no-enter'}">${html}</div>`;
  $$('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view));
  $('#connectionLabel').textContent=liveNode.connected?'NODE ONLINE':'NODE OFFLINE';
  const note=$('.context-note');if(note.firstChild)note.firstChild.textContent=tr('LIVE DATA / ','실시간 데이터 / ');
- $('#sparkDisplayName').textContent=preferences.sparkName;
+ $('#sparkDisplayName').textContent=preferences.sparkName;$('#runtimeVersion').textContent='V'+liveNode.version;
  if(!animate)window.scrollTo(0,previousScroll);syncHardware();translateUI();if(nameDraftDirty&&$('#sparkNameInput'))$('#sparkNameInput').value=nameDraft;if(typeof syncConnectionStatus==='function')syncConnectionStatus();if(typeof syncPowerHeader==='function')syncPowerHeader();if(state.view==='jobs'&&typeof refreshPrograms==='function')refreshPrograms();if(state.view==='models'&&typeof refreshServiceSignals==='function')refreshServiceSignals();if(typeof connectionToolbar==='function')connectionToolbar();if(typeof drawInference==='function')drawInference();
 };
 async function refreshLive(){
  if(liveNode.busy||!liveNode.token||document.hidden)return;liveNode.busy=true;
  try{
-  const [sample,settings,registered,events,hardware]=await Promise.all([api('metrics'),api('settings'),((['overview','models','jobs'].includes(state.view)||(typeof watchedOperations!=='undefined'&&watchedOperations.size>0))?api('services').then(v=>{liveNode.servicesConnected=true;return v;}).catch(()=>{liveNode.servicesConnected=false;return liveNode.services;}):Promise.resolve(liveNode.services)),api('events'),liveNode.hardware?Promise.resolve(liveNode.hardware):api('hardware')]);
+  const [sample,settings,registered,events,hardware]=await Promise.all([api('metrics'),api('settings'),((typeof serviceNeedsPolling==='function'?serviceNeedsPolling():['overview','models','jobs'].includes(state.view))?api('services').then(v=>{liveNode.servicesConnected=true;return v;}).catch(()=>{liveNode.servicesConnected=false;return liveNode.services;}):Promise.resolve(liveNode.services)),api('events'),liveNode.hardware?Promise.resolve(liveNode.hardware):api('hardware')]);
   const hardwareLoaded=!liveNode.hardware;liveNode.hardware=hardware;syncHardware();if(hardwareLoaded&&state.view==='overview')render(false);
   $('#runtimeVersion').textContent='V'+settings.version;
   liveNode.sample=sample;liveNode.history=await api('history');liveNode.services=registered;liveNode.models=(registered.services||[]).map(s=>({...s,state:s.state==='running'?'active':s.state,engine:s.adapter}));liveNode.events=events;liveNode.connected=true;liveNode.version=settings.version;preferences.sparkName=settings.spark_name;$('#connectionLabel').textContent='NODE ONLINE';const nameInput=$('#sparkNameInput');if(nameInput&&!nameDraftDirty)nameInput.value=settings.spark_name;lastSuccessfulRefresh=Date.now();
@@ -81,8 +84,8 @@ async function refreshLive(){
   if(state.view==='overview'&&document.querySelector('.metric-grid')){const template=document.createElement('template');template.innerHTML=installedOverview();document.querySelectorAll('[data-metric]').forEach(card=>{const next=template.content.querySelector('[data-metric="'+card.dataset.metric+'"]');if(next)card.innerHTML=next.innerHTML;});document.querySelector('.section-head > span').textContent=tr('LIVE / 5 SEC','실측 / 5초');$('#connectionLabel').textContent='NODE ONLINE';$('#sparkDisplayName').textContent=preferences.sparkName;translateUI();}else if(state.view==='models'&&typeof refreshServiceCards==='function')refreshServiceCards();else if(state.view==='logs'&&typeof refreshActivity==='function')refreshActivity();else if(!['settings','jobs'].includes(state.view))render(false);else $('#sparkDisplayName').textContent=preferences.sparkName;
   if(state.view!=='models'&&typeof refreshServiceSignals==='function')refreshServiceSignals();
   if(typeof connectionToolbar==='function')connectionToolbar();if(typeof refreshInference==='function')refreshInference();if(metricExplorer&&!$('#modal').hidden)renderMetricDetailBody();
- }catch(error){liveNode.connected=false;if(metricExplorer)renderMetricDetailBody();if(!liveNode.token||state.view!=='settings')render(false);const err=$('#liveLoginError');if(err)err.textContent=error.message;}
- finally{syncConnectionStatus();if(typeof syncPowerHeader==='function')syncPowerHeader();liveNode.busy=false;if(state.view==='models'&&liveNode.token&&liveNode.servicesConnected===null)queueMicrotask(refreshLive);}
+ }catch(error){liveNode.connected=false;liveNode.servicesConnected=false;if(typeof inferenceError!=='undefined')inferenceError=true;if(metricExplorer)renderMetricDetailBody();if(!liveNode.token||state.view!=='settings')render(false);const err=$('#liveLoginError');if(err)err.textContent=error.message;}
+ finally{liveNode.statusChecked=true;if(typeof refreshServiceDetail==='function')refreshServiceDetail();syncConnectionStatus();if(typeof syncPowerHeader==='function')syncPowerHeader();liveNode.busy=false;if(state.view==='models'&&liveNode.token&&liveNode.servicesConnected===null)queueMicrotask(refreshLive);}
 }
 document.addEventListener('submit',async event=>{
  if(!['liveLogin','sparkNameForm'].includes(event.target.id))return;event.preventDefault();event.stopImmediatePropagation();
@@ -101,4 +104,4 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshLiv
 document.addEventListener('spark-language-change',()=>render(false));
 state.jobs=[];state.events=[];state.model=null;
 if(liveNode.token){localStorage.setItem('spark.access',liveNode.token);sessionStorage.removeItem('spark.access');}
-render(false);api('info').then(info=>{liveNode.version=info.version;liveNode.authMode=info.auth_mode;render(false);refreshLive();}).catch(()=>{});setInterval(refreshLive,5000);
+render(false);api('info').then(info=>{liveNode.version=info.version;liveNode.authMode=info.auth_mode;render(false);refreshLive();}).catch(()=>{liveNode.statusChecked=true;syncConnectionStatus();});setInterval(refreshLive,5000);

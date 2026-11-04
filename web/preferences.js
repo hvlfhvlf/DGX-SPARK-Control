@@ -1,11 +1,11 @@
 'use strict';
 // Browser preferences only. Discovery results are fixtures, never filesystem reads.
-const preferenceDefaults = {accent:'lime',density:'comfortable',home:'overview',sparkName:'DGX_SPARK',hero:true,motion:true};
+const preferenceDefaults = {accent:'lime',theme:'black',density:'comfortable',home:'overview',sparkName:'DGX_SPARK',hero:true,motion:true};
 let preferences = {...preferenceDefaults};
 try {
   const saved = JSON.parse(localStorage.getItem('spark.preferences.v1') || '{}');
-  for (const key of ['accent','density','home']) {
-    const allowed = {accent:['lime','lavender','ice'],density:['comfortable','compact'],home:['overview','models','jobs','settings']}[key];
+  for (const key of ['accent','theme','density','home']) {
+    const allowed = {accent:['lime','lavender','ice'],theme:['black','white'],density:['comfortable','compact'],home:['overview','models','jobs','settings']}[key];
     if (allowed.includes(saved[key])) preferences[key] = saved[key];
   }
   if(typeof saved.sparkName==='string'&&saved.sparkName.trim()) preferences.sparkName=saved.sparkName.trim().slice(0,32);
@@ -15,9 +15,27 @@ let discoveryScanned = false;
 function applyPreferences() {
   const name=document.getElementById('sparkDisplayName');
   if(name){name.textContent=preferences.sparkName;name.title=preferences.sparkName;}
+  document.documentElement.dataset.accent = preferences.accent;
+  document.documentElement.dataset.theme = preferences.theme;
   document.body.dataset.accent = preferences.accent;
+  document.querySelectorAll('[data-accent-choice]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.accentChoice===preferences.accent)));
+  updateThemeControl();
   document.body.dataset.density = preferences.density;
   document.body.classList.toggle('hide-hero',!preferences.hero);
+}
+function updateThemeControl() {
+  const button=document.getElementById('themeToggle');
+  const ko=document.documentElement.lang==='ko';
+  if(button){
+    const label=preferences.theme==='white'?(ko?'블랙 모드로 전환':'Switch to black mode'):(ko?'화이트 모드로 전환':'Switch to white mode');
+    button.setAttribute('aria-label',label);button.title=label;
+  }
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta)meta.content=getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+}
+document.addEventListener('spark-language-change',updateThemeControl);
+function accentChoices() {
+  return `<div class="accent-options" role="group" aria-label="Accent color">${[['lime','Acid lime'],['lavender','Lavender'],['ice','Ice blue']].map(([value,label])=>`<button type="button" class="accent-option" data-accent-choice="${value}" aria-pressed="${preferences.accent===value}"><span class="accent-swatch" aria-hidden="true"></span>${label}</button>`).join('')}</div>`;
 }
 function savePreferences() {
   applyPreferences();
@@ -32,8 +50,8 @@ function settingsView() {
   return pageHeading('SYSTEM SETTINGS','05','MAKE THIS SPACE YOURS.') + `<div class="settings-grid settings-primary">
   <section class="panel"><div class="panel-top"><h2 class="panel-title">PERSONALIZATION</h2><span class="tiny">THIS BROWSER</span></div>
   <form id="sparkNameForm" class="setting-row spark-name-row"><div><h3><label for="sparkNameInput">Spark name</label></h3><p>A display name for this Spark. Saved in this browser; the system hostname stays unchanged.</p></div><div class="spark-name-controls"><input id="sparkNameInput" name="sparkName" type="text" required maxlength="32" pattern=".*\\S.*" value="${escapeHTML(preferences.sparkName)}" autocomplete="off" aria-label="Spark name" placeholder="My Spark"><button type="submit" class="button secondary">SAVE NAME</button></div></form>
-  <div class="setting-row"><div><h3>Accent color</h3><p>Choose the interface highlight. Hardware artwork keeps its original colors.</p></div>${preferenceSelect('accent','Accent color',[['lime','Acid lime'],['lavender','Lavender'],['ice','Ice blue']])}</div>
-  <div class="setting-row"><div><h3>Layout density</h3><p>Adjust panel spacing without shrinking the text.</p></div>${preferenceSelect('density','Layout density',[['comfortable','Comfortable'],['compact','Compact']])}</div>
+  <div class="setting-row accent-setting"><div><h3>Accent color</h3><p>Applied to buttons, charts and artwork. Saved in this browser.</p></div>${accentChoices()}</div>
+  <div class="setting-row"><div><h3>Layout density</h3><p>Comfortable keeps more breathing room. Compact shortens cards and charts, especially on phones; text stays the same size.</p></div>${preferenceSelect('density','Layout density',[['comfortable','Comfortable'],['compact','Compact']])}</div>
   <div class="setting-row"><div><h3>Start page</h3><p>Used when opening the dashboard without a page link.</p></div>${preferenceSelect('home','Start page',[['overview','Overview'],['models','Models'],['jobs','Jobs'],['settings','Settings']])}</div>
   <div class="setting-row"><div><h3>Overview artwork</h3><p>Hide the large hero to put telemetry first.</p></div>${switchInput('heroToggle',preferences.hero,'Overview artwork')}</div>
   <div class="setting-row"><div><h3>Reset preferences</h3><p>Appearance is saved on this browser, separately from the demo session.</p></div><button class="button secondary" id="resetPreferences">RESTORE</button></div></section>
@@ -53,6 +71,8 @@ document.addEventListener('change',event=>{
 });
 document.addEventListener('click',event=>{
   const button=event.target.closest('button'); if(!button||button.disabled)return;
+  if(button.id==='themeToggle'){preferences.theme=preferences.theme==='white'?'black':'white';savePreferences();}
+  if(button.dataset.accentChoice){preferences.accent=button.dataset.accentChoice;savePreferences();}
   if(button.id==='resetPreferences'){preferences={...preferenceDefaults};savePreferences();setMotion(preferences.motion);render(false);toast('Personal preferences restored.');}
   if(button.id==='scanModels'){discoveryScanned=true;log('Demo inventory scan: registered, new and missing fixtures. No filesystem accessed.');render(false);toast('Demo scan complete. No DGX connection.');}
   if(button.id==='reviewDiscovered')showModal(`<h2 id="modalTitle">REGISTER MODEL?</h2><p>This is a fictional GGUF discovery result. Add its metadata to the session model bay as an unverified draft. It cannot be launched until an engine adapter is configured.</p><dl><dt>MODEL</dt><dd>Local LLM example</dd><dt>FORMAT</dt><dd>GGUF (demo)</dd><dt>ENGINE / MEMORY</dt><dd>UNVERIFIED</dd><dt>ACTION</dt><dd>METADATA ONLY</dd></dl><div class="button-row"><button class="button" id="registerDiscovered">ADD DRAFT</button><button class="button secondary" data-close="true">CANCEL</button></div>`);

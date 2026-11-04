@@ -69,6 +69,29 @@ class ServiceTests(unittest.TestCase):
             self.assertNotIn('manager',row)
             self.assertNotIn('probe',row)
 
+    def test_readiness_cache_does_not_survive_process_restart_or_connection_edit(self):
+        value=self.svc.registry.read()
+        for sid in ('second','third'):
+            value['services'].append(dict(id=sid,name=sid,adapter='openai-compatible',default_profile_id=sid))
+            value['profiles'].append(dict(id=sid,service_id=sid,name=sid,manager=dict(type='systemd-user',unit=sid+'.service'),probe={'origin':'http://127.0.0.1:18888'}))
+        value['services'][0]['adapter']='openai-compatible'
+        value['profiles'][0]['probe']={'origin':'http://127.0.0.1:18889'}
+        self.svc.registry.apply(value,1)
+        invocation=['first-run']
+        def current(units):
+            return {u:dict(Id=u,LoadState='loaded',ActiveState='active',InvocationID=invocation[0],MainPID='42') for u in units}
+        def result(adapter,profile,state):
+            return dict(readiness='ready' if state=='running' else 'unknown',running_jobs=None,pending_jobs=None,model_count=1 if state=='running' else None)
+        with patch('spark_control.services.system_states',side_effect=current),patch('spark_control.services.probe',side_effect=result):
+            self.svc.probe_cursor=0
+            self.assertEqual(self.svc.listing()['services'][1]['readiness'],'ready')
+            invocation[0]='second-run';self.svc.cached_at=0;self.svc.probe_cursor=2
+            self.assertEqual(self.svc.listing()['services'][1]['readiness'],'unknown')
+            self.svc.cached_at=0;self.svc.probe_cursor=0;self.svc.listing()
+            value=self.svc.registry.read();value['profiles'][2]['probe']={'origin':'http://127.0.0.1:18890'}
+            self.svc.registry.apply(value,value['revision']);self.svc.probe_cursor=2
+            self.assertEqual(self.svc.listing()['services'][1]['readiness'],'unknown')
+
     def test_profile_display_metadata_and_safe_app_link(self):
         value=self.svc.registry.read()
         value['profiles'][0].update(model_name='Example Model', quantization='NVFP4 · Mixed precision', inference_engine='Example native', serving_engine='Example OpenAI API', open_url='https://app.example:8443/')

@@ -1,0 +1,53 @@
+/* Palette contract: components use semantic tokens, never literal colors.
+   Accent foregrounds are darker in white mode; bright fills retain dark ink. */
+:root{
+ color-scheme:dark;
+ --bg:#111311;--surface:#191c19;--raised:#20241f;--line:#363c32;--text:#ecede4;--muted:#b2bba7;
+ --accent:#c0fe04;--accent-fill:#c0fe04;--accent-soft:#252d16;--on-accent:#111311;
+ --chart-secondary:#bfabf5;--warning:#ffa866;--warning-soft:#2e241c;--danger:#f49a9a;--danger-fill:#f07070;--danger-soft:#321f20;--on-danger:#211111;
+ --art-base:#c0fe04;--art-top:#d0ff42;--art-side:#b1ec00;--art-ink:#1b2611;--art-grid:#1520001a;
+ --hover-surface:#ecede4;--hover-text:#111311;--hover-muted:#46503d;--hover-line:#b9c0ae;--hover-accent:#3f5900;--hover-secondary:#7150a3;
+ --overlay:#000b;--shadow:#0006;--sheen:#ffffff3d;
+ --swatch-lime:#c0fe04;--swatch-lavender:#bfabf5;--swatch-ice:#8bdcf5;
+ --lime:var(--accent);--purple:var(--chart-secondary);--orange:var(--warning);
+}
+:root[data-accent="lavender"]{
+ --accent:#bfabf5;--accent-fill:#bfabf5;--accent-soft:#2b2439;--chart-secondary:#8bdcf5;
+ --art-base:#bfabf5;--art-top:#d9ccff;--art-side:#ad95e6;--art-ink:#251b39;--art-grid:#251b391a;
+ --hover-accent:#64429a;--hover-secondary:#17647a;
+}
+:root[data-accent="ice"]{
+ --accent:#8bdcf5;--accent-fill:#8bdcf5;--accent-soft:#1b2c32;--chart-secondary:#eac783;
+ --art-base:#8bdcf5;--art-top:#b9edff;--art-side:#70c5df;--art-ink:#112c35;--art-grid:#112c351a;
+ --hover-accent:#17647a;--hover-secondary:#765312;
+}
+:root[data-theme="white"]{
+ color-scheme:light;
+ --bg:#f4f5f0;--surface:#ffffff;--raised:#e9ece5;--line:#c4cabe;--text:#1c231b;--muted:#555f50;
+ --accent:#456100;--accent-soft:#eaf2d7;--chart-secondary:#7045a2;
+ --warning:#8c460c;--warning-soft:#fff1e4;--danger:#a52732;--danger-fill:#b42c39;--danger-soft:#fff0f1;--on-danger:#ffffff;
+ --hover-surface:#e7ebdf;--hover-text:#1c231b;--hover-muted:#45513c;--hover-line:#adb7a3;
+ --overlay:#111a;--shadow:#1113;
+}
+:root[data-theme="white"][data-accent="lavender"]{--accent:#674098;--accent-soft:#f0e9fa;--chart-secondary:#17647a;--hover-surface:#eee8f6;--hover-muted:#554566;--hover-line:#bbadcb}
+:root[data-theme="white"][data-accent="ice"]{--accent:#17647a;--accent-soft:#e1f1f6;--chart-secondary:#765312;--hover-surface:#e0eef3;--hover-muted:#3c5660;--hover-line:#a1bcc6}
+/* A shared control contract covers future buttons and form fields. */
+input,select,textarea{accent-color:var(--accent);color-scheme:inherit}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
+::selection{background:var(--accent-fill);color:var(--on-accent)}
+.button:not(.secondary):not(.danger):not(.service-cancel){background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent)}
+.brand-symbol,.skip,.toast,.noscript{background:var(--accent-fill);color:var(--on-accent)}
+.hero-art{background:var(--art-base);color:var(--art-ink)}
+.hero-art svg text{fill:var(--art-ink)}
+.accent-options{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.accent-option{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:13px;white-space:nowrap}
+.accent-option[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 -2px var(--accent)}
+.accent-option:hover{border-color:var(--accent)}
+.accent-swatch{width:16px;height:16px;flex:0 0 16px;border:1px solid var(--muted);background:var(--swatch-lime)}
+[data-accent-choice="lavender"] .accent-swatch{background:var(--swatch-lavender)}
+[data-accent-choice="ice"] .accent-swatch{background:var(--swatch-ice)}
+.header-theme svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.header-theme .theme-moon,:root[data-theme="white"] .header-theme .theme-sun{display:none}
+:root[data-theme="white"] .header-theme .theme-moon{display:block}
+@media(max-width:600px){.accent-setting{align-items:flex-start}.accent-options{width:100%;justify-content:flex-start}.accent-option{padding:9px 10px;flex:1 1 auto}}
+@media(max-width:380px){.masthead{padding-right:12px}.masthead .brand{gap:9px;font-size:20px}.masthead .brand-light{font-size:14px}.masthead .brand-symbol{width:52px}.header-right{gap:5px}.accent-option{font-size:12px;padding:9px 8px}}

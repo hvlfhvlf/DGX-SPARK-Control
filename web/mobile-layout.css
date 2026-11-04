@@ -1,0 +1,130 @@
+/* Phone-only layout. Desktop geometry is intentionally untouched.
+   Keep telemetry at two columns and fixed heights across every refresh. */
+@media (max-width:600px){
+ .workspace{padding-inline:12px}
+ .context-bar,body[data-density="compact"] .context-bar{min-height:44px;padding-block:4px;gap:8px}
+ .context-bar .context-note{font-size:10px;line-height:1.4}
+ .page-heading,body[data-density="compact"] .page-heading{gap:8px;margin-bottom:12px}
+ .page-heading h1{font-size:clamp(27px,7.7vw,34px);line-height:1.05;margin-top:6px}
+ html[lang="ko"] .page-heading h1{font-size:clamp(26px,7.4vw,32px);line-height:1.15}
+ .section-head,body[data-density="compact"] .section-head{margin-top:12px;margin-bottom:8px;gap:8px}
+ .metric-grid,body[data-density="compact"] .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;grid-auto-rows:144px}
+ .metric-grid .metric,body[data-density="compact"] .metric-grid .metric{height:144px;min-height:144px;max-height:144px;padding:9px 10px}
+ .metric-grid .metric .metric-top{min-height:28px;line-height:1.3;align-items:flex-start;flex-shrink:0}
+ .metric-grid .metric .metric-reading,body[data-density="compact"] .metric-grid .metric-reading{margin:3px 0 4px;min-height:46px}
+ .metric-grid .metric .metric-foot{min-height:16px;line-height:1.3;flex-wrap:nowrap;justify-content:flex-end;gap:0}
+ /* LIVE / 5 SEC above the grid already describes every card's source. */
+ .metric-grid .metric .metric-foot>span:first-child{display:none}
+ .metric-grid .metric .metric-line,.metric-grid .metric .metric-rule,
+ body[data-density="compact"] .metric-grid .metric-line,body[data-density="compact"] .metric-grid .metric-rule{margin-top:6px}
+ .metric-grid .io-metric .io-chart,body[data-density="compact"] .metric-grid .io-metric .io-chart{flex:0 0 24px;height:24px;min-height:24px;max-height:24px;margin-top:2px}
+ .metric-grid .io-metric .io-axis,body[data-density="compact"] .metric-grid .io-metric .io-axis{font-size:9px;line-height:1.1;margin:2px 0 3px}
+ .metric-grid .io-metric .metric-pair{gap:6px;margin-top:auto;padding:0}
+ .metric-grid .io-metric .io-label{font-size:10px;line-height:1.2;white-space:nowrap}
+ .metric-grid .io-metric .metric-pair strong{font-size:24px;line-height:1;margin-top:2px}
+ .metric-grid .io-metric .metric-pair small{font-size:10px;line-height:1.1;margin-top:2px}
+ body[data-density="compact"] .metric-grid{grid-auto-rows:132px;gap:6px}
+ body[data-density="compact"] .metric-grid .metric{height:132px;min-height:132px;max-height:132px;padding:7px 9px}
+ body[data-density="compact"] .metric-grid .io-metric .io-chart{flex-basis:20px;height:20px;min-height:20px;max-height:20px}
+ .inference-grid{margin-top:10px;gap:8px}
+ .inference-heading,body[data-density="compact"] .inference-heading{height:52px;min-height:52px;padding:4px 10px;gap:6px}
+ .inference-heading h2{font-size:11px}
+ .inference-ranges button{min-height:44px;padding:6px 8px}
+ .inference-body,body[data-density="compact"] .inference-body{padding:10px}
+ .inference-reading,body[data-density="compact"] .inference-reading{margin-bottom:8px}
+ .inference-chart,.inference-chart svg{height:88px}
+ body[data-density="compact"] .inference-chart,body[data-density="compact"] .inference-chart svg{height:76px}
+ .inference-x{margin-top:6px}
+ .inference-foot,.inference-note,body[data-density="compact"] .inference-foot,body[data-density="compact"] .inference-note{margin-top:6px}
+ .inference-model{min-height:0;gap:8px}
+ .inference-model p{margin-top:4px;line-height:1.4}
+ .inference-stats{margin-top:8px}
+ .inference-stats>div{padding-block:7px}
+ .inference-totals{margin-top:8px}
+ .inference-engine .inference-actions{padding-top:8px}
+ .inference-actions .button{min-height:44px}
+ .hero-copy{min-height:0;padding:18px}
+ .hero-title{margin-block:12px}
+ .hero-spec{padding-top:14px}
+ .hero{margin-bottom:12px}
+ .service-card{gap:6px}
+ .service-model-meta{margin-top:4px}
+ .service-toolbar{margin-bottom:10px}
+ .setting-row,body[data-density="compact"] .setting-row{padding:12px}
+ .panel-top{padding:12px}
+ footer{margin-top:18px;padding-top:12px}
+ /* Model cards reserve space only for content and actions that exist. */
+ .service-grid,body[data-density="compact"] .service-grid{gap:8px}
+ .service-card,body[data-density="compact"] .service-card{padding:9px 10px;gap:6px;grid-template-rows:auto auto auto auto auto}
+ .service-card-main h2{min-height:0}
+ .service-profile{min-height:0;margin-top:4px}
+ .service-profile:empty,.service-model-meta:empty,.service-operation:empty{display:none}
+ .service-health{min-height:0;padding-top:6px}
+ .service-operation{min-height:0}
+ .service-buttons{grid-template-rows:none;grid-auto-rows:minmax(44px,auto);align-self:end}
+ .service-toolbar{align-items:center}
+ .service-toolbar-actions{display:flex;gap:6px;justify-content:flex-end}
+ .service-toolbar .button{padding:8px 6px;font-size:10px}
+ .service-count{padding-top:0}
+ /* Keep dialog close/actions reachable while reducing decorative whitespace. */
+ .modal-card:not(.telemetry-detail){padding:0 14px 14px;max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px)}
+ .modal-card:not(.telemetry-detail)>.section-label{top:0;padding:6px 0;margin-bottom:10px;background:var(--surface)}
+ .modal-card:not(.telemetry-detail) #modalTitle{font-size:26px;line-height:1.15;margin:0 0 10px;overflow-wrap:anywhere}
+ .modal-card:not(.telemetry-detail) #modalContent>p{font-size:13px;line-height:1.5;margin:8px 0}
+ .service-detail-grid{gap:8px;margin:10px 0}
+ .service-detail-grid span{font-size:11px;margin-bottom:3px}
+ .service-detail-grid strong{font-size:16px;line-height:1.3}
+ .modal-card .service-engine-details{display:block;padding:0;margin:10px 0;border:0}
+ .service-engine-details>div{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+ .service-engine-details dt,.service-engine-details dd{font-size:12px;line-height:1.4;margin:0}
+ .service-engine-details dd{text-align:right}
+ .service-select-label{font-size:12px;margin-bottom:4px}
+ #serviceProfile{padding:10px;min-height:44px;font-size:16px}
+ .service-detail-actions{gap:6px;margin:8px 0}
+ .service-detail-actions .button{min-height:44px;padding:8px;font-size:12px}
+ .service-notes{padding-top:4px;margin-top:10px;font-size:12px}
+ .service-notes summary{display:flex;align-items:center;min-height:44px;cursor:pointer}
+ .service-notes summary::before{content:'+';margin-right:6px}
+ .service-notes[open] summary::before{content:'−'}
+ .service-notes p{margin:6px 0;line-height:1.5}
+ .service-confirm-actions{margin-top:12px;padding-top:10px;gap:8px}
+ .service-confirm-actions .button{min-height:48px;padding:10px 6px}
+ .editing-modal .service-confirm-actions{bottom:-14px;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+ .editing-modal .section-label{margin-bottom:8px}
+ .service-editor-tabs{margin:8px 0}
+ .service-edit-fields,.connection-fields{gap:8px}
+ .connection-consent{margin:12px 0}
+ .connection-review{gap:8px;padding:10px 0}
+ .connection-list{margin:10px 0}
+ /* The eight live metric dialogs share this compact phone rhythm. */
+ .modal-card.telemetry-detail{padding:0 12px 12px}
+ .telemetry-detail>.section-label{padding:4px 0}
+ .td-heading{padding-top:6px;gap:4px 8px}
+ .telemetry-detail .td-heading h2{font-size:28px}
+ html[lang="ko"] .telemetry-detail .td-heading h2{font-size:25px}
+ .td-status{margin:6px 0}
+ .td-stat{height:76px;padding:6px 8px;gap:2px}
+ .td-stat-head{min-height:20px}
+ .td-history{margin:8px 0 10px;padding:8px}
+ .td-chart-head{margin-bottom:4px}
+ .td-plot{height:104px;margin-top:4px}
+ .td-x-axis{margin-top:5px}
+ .td-range-summary{margin-top:8px;padding-top:6px}
+ .td-section{margin:12px 0}
+ .td-section>h3{margin-bottom:6px}
+ .td-rows>div{padding:7px 0;min-height:34px;gap:8px}
+ .telemetry-detail .td-hint{margin-top:8px;line-height:1.5}
+ .td-capacity-legend{gap:8px}
+ .td-cores>div{padding:5px 6px;gap:1px}
+ .td-sensors>div{padding:8px;gap:8px}
+ .td-sources{margin-top:12px}
+ .td-sources summary{min-height:44px;padding:12px 0}
+ .sensor-extra summary{padding:10px 0}
+}
+@media(max-width:360px){
+ .td-cores>div{padding-inline:3px}
+ .service-toolbar{display:block}
+ .service-count{display:block;margin-bottom:6px}
+ .service-toolbar-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+ .service-toolbar-actions #connectionAdd{grid-column:auto;grid-row:auto}
+}

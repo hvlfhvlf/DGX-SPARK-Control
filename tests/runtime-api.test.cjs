@@ -24,3 +24,11 @@ test('unauthorized current session is still revoked locally',async()=>{
  const h=harness(async()=>({status:401,ok:false}));await assert.rejects(h.c.api('metrics'));
  assert.equal(h.c.liveNode.token,'');assert.equal(h.removed.length,2);assert.equal(h.timeoutActive(),false);
 });
+
+test('late successful private response cannot repopulate a logged-out session',async()=>{
+ let finish;const h=harness(()=>new Promise(resolve=>finish=resolve));
+ const pending=h.c.api('services');h.c.liveNode.token='';
+ finish({status:200,ok:true,json:async()=>({services:[{id:'private-service'}]})});
+ await assert.rejects(pending,/Session changed/);
+ assert.equal(h.c.liveNode.token,'');assert.equal(h.timeoutActive(),false);
+});

@@ -1,4 +1,4 @@
-# Technical installation / 기술 설치 안내 — 0.2.0
+# Technical installation / 기술 설치 안내 — 0.3.2
 
 Start with [한국어 간편 설치](QUICKSTART.ko.md) or [English quick start](QUICKSTART.en.md).
 
@@ -22,12 +22,12 @@ Install the `.deb` with an administrator, then run setup as the desktop user. Pa
 
 ## Archive alternative
 
-Download `DGX-SPARK-Control-0.2.0.tar.gz` and `SHA256SUMS` from the release. Verify only the archive's checksum line if you did not download the `.deb`:
+Download `DGX-SPARK-Control-0.3.2.tar.gz` and `SHA256SUMS` from the release. Verify only the archive's checksum line if you did not download the `.deb`:
 
 ```bash
-grep '  DGX-SPARK-Control-0.2.0.tar.gz$' SHA256SUMS | sha256sum -c -
+grep '  DGX-SPARK-Control-0.3.2.tar.gz$' SHA256SUMS | sha256sum -c -
 mkdir app
-tar -xzf DGX-SPARK-Control-0.2.0.tar.gz -C app
+tar -xzf DGX-SPARK-Control-0.3.2.tar.gz -C app
 cd app
 python3 -m spark_control.setup --cli --lang en
 ```

@@ -107,3 +107,7 @@ A local administrator may grant the selected OS account only the normal login1 r
 `inference.py`: shared on-demand five-second cache, at most four 720-sample streams; same-session counter baselines and gap/reset handling. GET /api/inference?id=<registered-service> uses fixed metrics/health/models paths. `local_http.py` prefers loopback; connection refusal may fall back only to an IPv4 address present in OS interface inventory and listening on the exact port in /proc/net/tcp. No DNS, redirects or external destinations.
 `connections.py`: authenticated discover/check/save flow with bounded 120-second one-use review tickets, current registry revision and user-unit validation. Existing units only. New profiles share the same registry locks. API observation changes do not change executable bindings.
 `models.py`: authenticated roots and registration APIs with capped explicit-root discovery and private inventory; filenames are not engine compatibility claims.
+
+## Appearance architecture
+
+`web/theme.css` is the single palette source for black/white modes and the three accent presets. Components use semantic variables, including separate foreground and fill accents. `theme-init.js` restores validated browser-local preferences before paint; `preferences.js` applies changes without replacing forms or live panels. Read [THEMING.md](THEMING.md) before adding buttons, charts, dialogs or color states. Theme tests guard against new hardcoded component colors and unreadable palette pairs.

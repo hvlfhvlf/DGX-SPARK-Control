@@ -275,6 +275,7 @@ class Services:
         self.cache_lock = threading.Lock()
         self.op_lock = threading.Lock()
         self.cached_at, self.cached, self.cached_revision = 0, None, -1
+        self.readiness_runs = {}
         self.observations = Observations()
         self.operation_path = self.registry.directory / 'service-operations.json'
         self.operations = []
@@ -305,17 +306,20 @@ class Services:
                 eligible = [s['id'] for s in value['services']]
                 selected = set((eligible + eligible)[self.probe_cursor:self.probe_cursor + 2])
                 self.probe_cursor = (self.probe_cursor + 2) % max(1, len(eligible))
-                rows = []
+                rows, readiness_runs = [], {}
                 for service in value['services']:
                     profiles = [p for p in value['profiles'] if p['service_id'] == service['id']]
                     p = next(p for p in profiles if p['id'] == service['default_profile_id'])
                     state = process_state(states.get(p['manager']['unit'], {}))
                     fields=states.get(p['manager']['unit'], {})
+                    run=(fields.get('InvocationID'), fields.get('MainPID'), fields.get('ExecMainStartTimestampMonotonic'))
+                    readiness_runs[service['id']]=run
                     startup=self.observations.read(p,fields,service['id'] in selected) if p.get('startup_observer') or state=='failed' else None
                     if startup: startup.pop('invocation',None)
                     readiness=probe(service['adapter'],p,state if service['id'] in selected or service['adapter'] in ('process','hermes') else 'unknown')
                     previous=next((r for r in self.cached or [] if r['id']==service['id'] and r['profile_id']==p['id'] and r['state']==state),None)
-                    if service['id'] not in selected and previous and time.monotonic()-previous.get('readiness_checked_at',0)<30:
+                    same_run=any(run) and self.readiness_runs.get(service['id'])==run
+                    if service['id'] not in selected and previous and same_run and value['revision']==self.cached_revision and time.monotonic()-previous.get('readiness_checked_at',0)<30:
                         readiness={k:previous[k] for k in ('readiness','running_jobs','pending_jobs','model_count')}
                     checked=time.monotonic() if service['id'] in selected else (previous or {}).get('readiness_checked_at',0)
                     rows.append(dict(startup=startup,id=service['id'], name=service['name'], adapter=service['adapter'], state=state,
@@ -324,6 +328,7 @@ class Services:
                         open_url=p['open_url'], profiles=[dict(id=q['id'], name=q['name'], controllable=q['allow_control'], state=process_state(states.get(q['manager']['unit'], {}))) for q in profiles],
                         readiness_checked_at=checked,**readiness))
                 self.cached = rows
+                self.readiness_runs = readiness_runs
                 self.cached_revision, self.cached_at = value['revision'], time.monotonic()
             rows = copy.deepcopy(self.cached)
         with self.op_lock:

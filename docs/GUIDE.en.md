@@ -1,6 +1,6 @@
 # DGX-SPARK-Control user guide — English
 
-**0.3.1** · [한국어](GUIDE.ko.md) · [Easy installation](QUICKSTART.en.md)
+**0.3.2** · [한국어](GUIDE.ko.md) · [Easy installation](QUICKSTART.en.md)
 
 ## Metric details
 
@@ -99,7 +99,7 @@ See [privacy and data flow](PRIVACY.md). Open App opens a configured address; co
 - Card-top status: amber while loading, lime for API readiness, red for failure. Opt-in TensorFold profiles report actual loaded layers. 100% weights is not server readiness. Engines without progress report a phase and elapsed time; process-only services are labelled separately.
 - Start after failure checks for residual processes, clears the selected unit's failed/start-limit state and attempts one start. A failed attempt opens an actionable warning. It never bypasses memory checks, changes engine settings or stops other models.
 - Programs replaces Jobs: account/all scope, name/PID search, CPU/RSS/uptime sorting. Shared 5-second cache; collected only while viewing the tab. CPU is normalized to whole-host capacity. RSS includes shared pages and must not be summed as actual physical memory usage. Command lines and environments are not collected.
-- Settings → System power requires an interruption warning followed by password re-entry and an explicit final action. Confirmations expire after 60 seconds, are session/action-bound and single-use. An incorrect password does not log out your device. Powering on after shutdown requires local access or a separately configured wake mechanism.
+- Header power icon → Restart/Shut down requires an interruption warning followed by password re-entry and an explicit final action. Confirmations expire after 60 seconds, are session/action-bound and single-use. An incorrect password does not log out your device. Powering on after shutdown requires local access or a separately configured wake mechanism.
 
 After package installation, a local administrator can opt in to the fixed power helper. This command never executes a power action. Other users' sessions and shutdown blockers prevent execution.
 
@@ -112,7 +112,7 @@ For TensorFold progress, set `"startup_observer": "tensorfold"` in the local lau
 
 
 ### Activity and header power controls
-Activity is grouped by calendar date in the device time zone, newest first. CLEAR asks for confirmation and clears the reviewed finished display history across devices, preserving ongoing/new events, service recovery records and system logs. The cleared view persists across server restarts. The header power icon offers restart/shutdown choices before the existing warning and password-confirmation steps. Settings power controls remain available.
+Activity is grouped by calendar date in the device time zone, newest first. CLEAR asks for confirmation and clears the reviewed finished display history across devices, preserving ongoing/new events, service recovery records and system logs. The cleared view persists across server restarts. The header power icon offers restart/shutdown choices before the existing warning and password-confirmation steps. The duplicate Settings power section is removed; use the header icon.
 
 
 ## Compact status display
@@ -139,8 +139,26 @@ The separate CONNECTION card button is removed. Open the pencil (EDIT), then Dis
 Desktop throughput and active-LLM panels have equal widths aligned to the telemetry columns, matching headers and compact chart spacing. Engine actions sit at the bottom. Narrow screens stack these panels; the eight telemetry cards retain at least two columns.
 
 ## Editing, filtering and recovery
-Unsaved Spark-name edits survive refresh until Save or Cancel edit. Service editor sections save separately; when another section has changes it remains open. Save failures retain the draft; closing asks before discarding changes. Browser reload may show an unsaved warning. Drafts are not permanently stored.
-Stopped apps show Start to open; unready APIs show App not ready; process-only apps show Open · unverified. This is not a guarantee of successful app authentication.
+Change the Spark name using the input and Save button. Automatic updates preserve the draft while Settings stays open. Leaving Settings for another dashboard tab or reloading the page discards unsaved name edits and restores the last saved name. There is no Cancel or Undo button. Service editor sections save separately; when another section has changes it remains open. Service editor save failures retain the draft; closing asks before discarding changes. Browser reload may show a warning for unsaved service edits. Drafts are not permanently stored.
+Stopped apps show Start to open; unready APIs show App not ready; process-only apps show Open App. Details explains: Process running confirmed · Connection status not checked. This is not a guarantee of successful app authentication.
 Model files are inventory, not generated launch configurations. Connect an existing user service already configured for the model. Docker/terminal setup and installation remain local Spark tasks.
 Activity supports search, failed/interrupted filtering and date folding. Clear includes completed entries outside the filter, across devices. Service-process filtering excludes common desktop/system groups; it is not exclusively a registered-model list.
 Package installations update through the new .deb with apt, never archive update scripts.
+
+## Status and control guidance (0.3.2)
+
+- **API responding** means the current API answered; it does not guarantee successful generation or performance. **Last action** describes a historical control request separately from current health.
+- Process-only services use **OPEN APP** and explain **Process running confirmed · Connection status not checked** in Details. Unreachable, unknown and disconnected states are not presented as ready.
+- If the profile/settings change or the connection is lost after opening a confirmation, controls are disabled. Close and review again against fresh state. Retrying a failed Stop retries Stop.
+- Add service registers its connection and optional control permission; it does not start it. Registering a model file does not create a launch profile.
+- **Dashboard OS account** in Programs means the OS account running the dashboard on Spark, not the user on the visiting device.
+- Clear activity applies to finished successful, failed and interrupted entries. The Spark name is shared; appearance and language belong to the current browser.
+
+
+### Layout density and header controls
+On phones, model cards no longer reserve empty metadata/action rows. Service details use compact label/value rows, and all eight metric dialogs use tighter summary, chart and explanatory spacing. Controls and measured data are unchanged; desktop geometry is preserved. Expand the existing notes for longer explanations.
+Desktop spacing is unchanged. At widths of 600px and below, Comfortable uses a denser phone layout and Compact reduces spacing further. Reading font sizes and two telemetry columns are preserved; cards have fixed heights of 144px and 132px respectively. At 390px, the eight-card grids measure 600px and 546px. Repeated Live sensor labels are hidden on phones while clocks, percentages, total capacities and graphs remain. Headings and inference panels also use less whitespace; primary action targets remain at least 44px. The overview artwork has its own collapse button. Density is saved in this browser. Language and power buttons both measure 68×44px on desktop and 44×44px on phones. The two-stage power warning and password confirmation remain.
+
+## Color presets and black / white modes
+
+Use the sun / moon icon beside Language and System power to switch modes. Black is the default. Settings → Accent color shows Acid lime, Lavender and Ice blue with color chips. The selection applies to controls, charts and chip artwork; warning and failure colors retain their meaning. White mode uses darker accent text and graph lines for legibility. Appearance is saved per browser and restored on reload; it does not change other devices.

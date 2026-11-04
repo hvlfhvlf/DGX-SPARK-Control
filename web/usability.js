@@ -44,23 +44,29 @@ function patchRetainingInteraction(el,html){
 function smallRate(value){return value==null?'—':value>0&&value<0.1?'<0.1':Number(value).toFixed(1);}
 function syncConnectionStatus(){
  const el=document.getElementById('connectionLabel');if(!el)return;
- el.textContent=liveNode.connected?tr('NODE ONLINE','연결됨'):tr('CONNECTION LOST','연결 끊김');
+ el.textContent=liveNode.connected?tr('NODE ONLINE','연결됨'):!liveNode.token?tr('SIGN IN REQUIRED','로그인 필요'):!liveNode.statusChecked?tr('CONNECTING','연결 확인 중'):tr('CONNECTION LOST','연결 끊김');
  el.title=lastSuccessfulRefresh?tr('Last response: ','마지막 응답: ')+new Date(lastSuccessfulRefresh).toLocaleTimeString():tr('Waiting for server','서버 응답 대기');
  document.getElementById('connectionDot')?.classList.toggle('offline',!liveNode.connected);
  let notice=document.getElementById('connectionNotice');
  if(!notice){notice=document.createElement('div');notice.id='connectionNotice';notice.setAttribute('role','status');document.querySelector('.context-bar')?.after(notice);}
- notice.hidden=liveNode.connected||!liveNode.token;
+ notice.hidden=liveNode.connected||!liveNode.token||!liveNode.statusChecked;
  notice.textContent=tr('Connection lost. Retrying automatically. Unsaved edits are kept. ','연결이 끊겼습니다. 자동 재연결 중이며 입력 내용은 유지됩니다. ')+(lastSuccessfulRefresh?tr('Last response ','마지막 응답 ')+new Date(lastSuccessfulRefresh).toLocaleTimeString():'');
 }
 function appAccess(s){
  if(!s.open_url)return {enabled:false,label:''};
+ if(typeof liveNode!=='undefined'&&(liveNode.connected===false||liveNode.servicesConnected===false))return {enabled:false,label:tr('STATUS UNAVAILABLE','상태 확인 불가')};
+ if(s.state==='unknown')return {enabled:false,label:tr('STATUS UNAVAILABLE','상태 확인 불가')};
+ if(serviceBusy(s)||['starting','stopping'].includes(s.state))return {enabled:false,label:tr('PLEASE WAIT','처리 중')};
  if(s.state!=='running')return {enabled:false,label:tr('START TO OPEN','실행 후 열기')};
- if(serviceBusy(s)||['loading','unreachable'].includes(s.readiness))return {enabled:false,label:tr('APP NOT READY','접속 준비 중')};
- return {enabled:true,label:s.readiness==='ready'?tr('OPEN APP','앱 열기'):tr('OPEN · UNVERIFIED','열기 · 미확인')};
+ if(s.readiness==='unreachable')return {enabled:false,label:tr('API NOT RESPONDING','API 응답 없음')};
+ if(s.readiness==='loading')return {enabled:false,label:tr('APP NOT READY','접속 준비 중')};
+ if(!['ready','unsupported'].includes(s.readiness))return {enabled:false,label:tr('CHECKING STATUS','상태 확인 중')};
+ return {enabled:true,label:tr('OPEN APP','앱 열기')};
 }
+function appConnectionNote(s){return s.state==='running'&&s.readiness==='unsupported'?tr('Process running confirmed · Connection status not checked','프로세스 실행 확인 · 연결 상태 미검사'):'';}
 function appAccessMarkup(s){const a=appAccess(s);if(!s.open_url)return '';return a.enabled?`<a class="button secondary service-open" data-service-open href="${escapeHTML(s.open_url)}" target="_blank" rel="noopener noreferrer">${a.label} ${arrowIcon()}</a>`:`<span class="button secondary service-open unavailable" data-service-open aria-disabled="true">${a.label}</span>`;}
 document.addEventListener('input',event=>{updateFormDraft(event.target.form);if(event.target.id==='sparkNameInput'){nameDraft=event.target.value;nameDraftDirty=nameDraft!==preferences.sparkName;}});
 document.addEventListener('change',event=>updateFormDraft(event.target.form));
-document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.hasAttribute('data-draft-keep')){event.stopImmediatePropagation();keepEditing();}if(b.hasAttribute('data-draft-discard')){event.stopImmediatePropagation();closeModal(true);}if(b.id==='cancelSparkName'){nameDraftDirty=false;nameDraft=null;document.getElementById('sparkNameInput').value=preferences.sparkName;}},true);
+document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b)return;if(b.hasAttribute('data-draft-keep')){event.stopImmediatePropagation();keepEditing();}if(b.hasAttribute('data-draft-discard')){event.stopImmediatePropagation();closeModal(true);}},true);
 document.addEventListener('keydown',event=>{const prompt=document.getElementById('discardDraftPrompt');if(!prompt)return;if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();keepEditing();}else if(event.key==='Tab'){const buttons=prompt.querySelectorAll('button'),first=buttons[0],last=buttons[buttons.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}},true);
-window.addEventListener('beforeunload',event=>{if(hasUnsavedForms()||nameDraftDirty){event.preventDefault();event.returnValue='';}});
+window.addEventListener('beforeunload',event=>{if(hasUnsavedForms()){event.preventDefault();event.returnValue='';}});

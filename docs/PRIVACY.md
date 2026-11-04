@@ -18,4 +18,4 @@ The installed browser requests its own Spark API. Fonts are self-hosted. The das
 
 Review the Git source/history and final archive/package bytes for recognizable secret patterns, known local credentials/identifiers, private configuration filenames and personal archive owners. Build from the tagged Git tree, distribute SHA256SUMS and verify downloads. Tests contain clearly synthetic credentials and loopback example URLs, not production keys. No personal ComfyUI gateway, Tailscale IP/domain, SSH configuration, prompts or screenshots are bundled.
 
-이번 검사는 알려진 실제 비밀값 대조, 키 패턴·개인 경로·기기 식별자·금지 파일·패키지 소유자 메타데이터 검사와 통신 코드 검토를 포함합니다. 패턴 검사가 모든 형태의 비밀정보 부재를 수학적으로 보증하지는 않습니다. 설정·로그를 이슈에 붙이기 전에는 별도로 검토하세요. 검증 범위는 [릴리스 기록](releases/0.3.1.md)에 정리합니다.
+이번 검사는 알려진 실제 비밀값 대조, 키 패턴·개인 경로·기기 식별자·금지 파일·패키지 소유자 메타데이터 검사와 통신 코드 검토를 포함합니다. 패턴 검사가 모든 형태의 비밀정보 부재를 수학적으로 보증하지는 않습니다. 설정·로그를 이슈에 붙이기 전에는 별도로 검토하세요. 검증 범위는 [릴리스 기록](releases/0.3.2.md)에 정리합니다.

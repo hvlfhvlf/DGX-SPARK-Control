@@ -1,4 +1,6 @@
-# LLM service/model handoff — 0.3.0
+# LLM service/model handoff — 0.3.2
+
+Start with the [agent playbook](../LLM-GUIDE.en.md) for copyable installation, registration, display-edit and model-switch prompts. Web registration supports connection review and optional control of existing user services; advanced local registry changes follow the steps below.
 
 Read AGENTS.md and ../MODELS.md first. The design research includes future scope; do not assume all proposed features exist.
 

@@ -1,3 +1,40 @@
+# 0.3.2 — 2026-11-05
+
+- Publish rc1/rc2 state and control safety fixes: current versus historical health, invocation/revision-aware readiness, reviewed-action binding, failed-stop retry and stale-session response rejection.
+- Add black/white modes, semantic accent presets with color chips, and documented extension-safe theme variables.
+- Compact phone telemetry, Model Bay, service/edit dialogs and eight metric details while retaining desktop geometry and touch targets; fix narrow CPU percentage overflow.
+- Simplify name editing, remove duplicate Settings power controls and align header buttons. Clarify registration, app links, data scope and control states.
+- Add Korean/English LLM playbooks with copyable installation, registration, display editing and model replacement requests. Preserve private settings, device logins and model processes.
+
+Validation and remaining limitations: [0.3.2 release record](docs/releases/0.3.2.md). Earlier candidate notes below are historical, not the current publication status.
+
+# UI development notes — incorporated into 0.3.2
+
+- Add phone-only spacing overrides at 600px and below, leaving desktop geometry unchanged. Fixed two-column telemetry cards are 144px in Comfortable and 132px in Compact; remove repetitive source labels on phones while retaining readings, clocks, capacities and graphs.
+- Reduce phone heading, inference, service and settings spacing without reducing telemetry reading fonts or 44px action targets.
+- Compact phone model cards, service/edit dialogs and all eight metric dialogs. Remove empty reserved fields/action rows, retain 44px controls, and prevent 100.0% per-core readings from overflowing narrow phone cells. Desktop model/detail geometry remains unchanged.
+
+- Centralize surface, accent, chart, artwork, hover and semantic status colors. Remove fixed green values from component styles.
+- Add color-chip preset buttons and a sun/moon header toggle with browser-local persistence and pre-paint restoration.
+- White mode uses darker text/chart accents and bright filled controls with paired foregrounds. Secondary chart colors stay distinct from the selected accent.
+- Keep aligned 44px header controls, two-column phone telemetry, existing fonts and chip geometry.
+- Add palette contrast, storage compatibility, preference interaction and component color regression tests; document the theme contract in `docs/THEMING.md`.
+- These changes were first validated as local static assets and are included in 0.3.2.
+
+# 0.3.2~rc2 — local usability and state audit, not published
+
+- Separate current API health from historical request failures; label latest action explicitly. Unknown/offline/unreachable states no longer look ready to open.
+- Invalidate cached API readiness when a systemd invocation or registry revision changes.
+- Bind action confirmation to the reviewed profile/revision; disable stale/offline controls and keep service Details refreshed outside Models.
+- Retry failed Stop as Stop; reject late successful private responses after a session change.
+- Clarify control permission, registration, shared/browser preferences, process scope and clearing finished activity. Keep registered model-file buttons disabled.
+- Initial loading displays Connecting instead of a false Connection lost warning; version is unknown until loaded.
+- Includes rc1 app-link wording. Public release remains 0.3.1. No GitHub publication.
+
+# 0.3.2~rc1 — local candidate, not published
+
+Use Open App for process-only application links. Show Process running confirmed / Connection status not checked in service Details while running, updating the note with live state. Preserve existing loading/stopped/unreachable access restrictions. No backend, authentication or lifecycle changes.
+
 # 0.3.1 — 2026-11-04
 
 - Measured inference throughput for supported TensorFold/vLLM/Strata endpoints, bounded history and selected LLM details.

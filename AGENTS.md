@@ -2,6 +2,8 @@
 
 Read README.md, docs/ARCHITECTURE.md, docs/MODELS.md, docs/UPDATES.md and the current docs/releases/<VERSION>.md before modifying this project.
 
+For agent-assisted installation or Model Bay changes, also read docs/LLM-GUIDE.en.md (or .ko.md) and docs/development/SERVICE-HANDOFF.en.md. Registration, display metadata and actual model installation/switching are distinct scopes.
+
 ## Invariants
 
 1. Keep the installed Spark server below **512,000,000 bytes** for the whole dashboard cgroup. Do not remove the 480 MiB hard limit. Target normal use well below 200 MiB. Measure before claiming low overhead.
