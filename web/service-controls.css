@@ -16,3 +16,11 @@
 @media(max-width:1100px){.service-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.service-toolbar{gap:8px}.service-toolbar-actions{gap:6px}.service-toolbar .button{font-size:11px;padding:9px 10px}.service-count{font-size:11px}.service-grid{gap:10px}.service-card{padding:10px 11px 12px;gap:8px}.service-card h2{font-size:20px}.service-state{font-size:11px}.service-profile{font-size:11px;margin-top:5px}.service-model-meta{font-size:11px;margin-top:6px}.service-health{font-size:10px;padding-top:8px;gap:3px 6px}.service-buttons{gap:6px}.service-buttons .button{font-size:11px;padding:10px 4px}.service-operation{font-size:10px}.service-guide{padding:0 12px}.service-detail-grid strong{font-size:18px}.service-candidates>div{flex-wrap:wrap}.service-detail-actions .button{flex:1 1 auto}.service-engine-details>div{grid-template-columns:1fr;gap:3px}.service-engine-details dd{font-size:14px}.service-order-list strong{font-size:13px}.service-order-list li{grid-template-columns:16px minmax(0,1fr) 44px 44px;gap:4px}.service-confirm-actions{gap:10px;margin-top:20px;padding-top:14px}.service-confirm-actions .button{min-height:52px;padding:12px 8px}}
 @media(max-width:360px){.service-card{padding:9px}.service-card h2{font-size:18px}.service-toolbar .button{padding:9px 7px}}
+
+/* Shared two-row action footer, with or without an application URL. */
+.service-buttons>.service-open{grid-column:1/-1;grid-row:1}
+.service-secondary-actions{grid-column:1/-1;grid-row:2}
+.service-secondary-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;min-width:0}
+@media(max-width:600px){.service-secondary-actions{gap:6px}}
+
+.service-secondary-actions>.button{height:44px;line-height:1.2;padding-block:6px}

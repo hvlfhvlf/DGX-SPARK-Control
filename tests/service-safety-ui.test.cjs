@@ -46,11 +46,13 @@ test('confirmation binds reviewed revision and profile, not latest background sn
 });
 
 test('service details and confirmation continue polling from Activity or Settings',()=>{
- const c=harness();c.state={view:'logs'};c.document.querySelector=()=>null;
+ const c=harness();c.state={view:'logs'};const modal={hidden:false,querySelector:()=>null};c.document.getElementById=()=>modal;
  assert.equal(c.serviceNeedsPolling(),false);
- c.document.querySelector=()=>({});assert.equal(c.serviceNeedsPolling(),true);
+ modal.querySelector=()=>({});assert.equal(c.serviceNeedsPolling(),true);
  c.state.view='settings';assert.equal(c.serviceNeedsPolling(),true);
- c.document.querySelector=()=>null;c.state.view='models';assert.equal(c.serviceNeedsPolling(),true);
+ modal.hidden=true;assert.equal(c.serviceNeedsPolling(),false);
+ c.state.view='models';assert.equal(c.serviceNeedsPolling(),true);
+ c.state.view='settings';c.watchedOperations=new Set(['pending']);assert.equal(c.serviceNeedsPolling(),true);
 });
 
 test('initial connection and signed-out states are not reported as connection failures',()=>{

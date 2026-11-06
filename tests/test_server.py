@@ -13,6 +13,53 @@ from spark_control.server import Server
 
 
 class ServerTests(unittest.TestCase):
+    def test_incremental_history_reset_cursor_and_auth(self):
+        now = time.time()
+        self.server.collector.history.extend([{'timestamp': now - 5, 'cpu': 1}, {'timestamp': now, 'cpu': 2}])
+        first = self.request('/api/history?incremental=1')
+        self.assertTrue(first['reset'])
+        self.assertEqual(len(first['samples']), 2)
+        base = '/api/history?incremental=1&epoch=' + first['epoch'] + '&since='
+        self.assertEqual(self.request(base + str(now))['samples'], [])
+        self.assertEqual(len(self.request(base + str(now - 5))['samples']), 1)
+        self.assertTrue(self.request(base + str(now + 60))['reset'])
+        self.assertTrue(self.request('/api/history?incremental=1&epoch=old&since=' + str(now))['reset'])
+        for bad in ('nan', 'inf', '-1', 'invalid'):
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                self.request(base + bad)
+            self.assertEqual(error.exception.code, 400)
+        with self.assertRaises(urllib.error.HTTPError) as error:
+            self.request('/api/history?incremental=1', token=False)
+        self.assertEqual(error.exception.code, 401)
+        self.assertIsInstance(self.request('/api/history'), list)
+
+    def test_saturation_returns_retryable_503_without_new_workers(self):
+        for _ in range(8):
+            self.server.slots.acquire()
+        try:
+            started = time.monotonic()
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                self.request('/api/info', token=False)
+            self.assertEqual(error.exception.code, 503)
+            self.assertEqual(error.exception.headers['Retry-After'], '1')
+            self.assertLess(time.monotonic() - started, 2)
+        finally:
+            for _ in range(8):
+                self.server.slots.release()
+        self.assertEqual(self.request('/api/info', token=False)['mode'], 'live')
+
+    def test_short_burst_waits_for_a_worker(self):
+        for _ in range(8):
+            self.server.slots.acquire()
+        timer = threading.Timer(0.05, self.server.slots.release)
+        timer.start()
+        try:
+            self.assertEqual(self.request('/api/info', token=False)['mode'], 'live')
+        finally:
+            timer.join()
+            for _ in range(7):
+                self.server.slots.release()
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.config = Config(self.temp.name)
@@ -37,11 +84,11 @@ class ServerTests(unittest.TestCase):
 
     def test_auth_and_origin(self):
         self.assertEqual(self.request('/api/info', token=False)['mode'], 'live')
-        for path in ['/api/inference','/api/connections/settings','/api/models/roots','/api/metrics', '/api/settings', '/api/models', '/api/history', '/api/hardware', '/api/services', '/api/programs', '/api/power/status', '/api/events']:
+        for path in ['/api/services/update?id=example','/api/inference','/api/connections/settings','/api/models/roots','/api/metrics', '/api/settings', '/api/models', '/api/history', '/api/hardware', '/api/services', '/api/programs', '/api/power/status', '/api/events']:
             with self.assertRaises(urllib.error.HTTPError) as error:
                 self.request(path, token=False)
             self.assertEqual(error.exception.code, 401)
-        for path in ['/api/models/register','/api/connections/discover','/api/connections/check','/api/connections/save','/api/models/roots','/api/services/action', '/api/services/discover', '/api/services/register', '/api/services/display', '/api/services/order', '/api/power/prepare', '/api/power/confirm', '/api/events/clear']:
+        for path in ['/api/services/update/check','/api/services/update/apply','/api/services/open','/api/models/register','/api/connections/discover','/api/connections/check','/api/connections/save','/api/models/roots','/api/services/action', '/api/services/discover', '/api/services/register', '/api/services/display', '/api/services/order', '/api/power/prepare', '/api/power/confirm', '/api/events/clear']:
             with self.assertRaises(urllib.error.HTTPError) as error:
                 self.request(path, {}, token=False)
             self.assertEqual(error.exception.code, 401)
@@ -51,6 +98,20 @@ class ServerTests(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as error:
             self.request('/api/settings', {'spark_name': 'Bad'}, origin='https://untrusted.example')
         self.assertEqual(error.exception.code, 403)
+
+    def test_autostart_auth_origin_and_routing(self):
+        for body in (None, {}):
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                self.request('/api/services/autostart?id=example', body, token=False)
+            self.assertEqual(error.exception.code, 401)
+        with self.assertRaises(urllib.error.HTTPError) as error:
+            self.request('/api/services/autostart', {}, origin='https://untrusted.example')
+        self.assertEqual(error.exception.code, 403)
+        with patch.object(self.server.autostart, 'status', return_value={'enabled':False}) as status, patch.object(self.server.autostart, 'set', return_value={'enabled':True}) as change:
+            self.assertFalse(self.request('/api/services/autostart?id=example')['enabled'])
+            status.assert_called_once_with('example');change.assert_not_called()
+            self.assertTrue(self.request('/api/services/autostart', {'id':'example','enabled':True})['enabled'])
+            change.assert_called_once()
 
     def test_power_wrong_password_does_not_log_out_and_get_never_mutates(self):
         self.config.set_password('test-fixture-only')

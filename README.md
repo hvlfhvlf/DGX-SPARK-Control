@@ -1,6 +1,6 @@
 # DGX-SPARK-Control
 
-**0.3.2 · NVIDIA DGX Spark · Ubuntu 24.04 ARM64**
+**0.3.3 · NVIDIA DGX Spark · Ubuntu 24.04 ARM64**
 
 Measured inference throughput, reviewed service registration, model-file inventory and compact live views. 실측 추론 처리량·서비스 등록·모델 파일 목록·실시간 상태를 한곳에서 확인합니다.
 
@@ -10,16 +10,16 @@ Measured inference throughput, reviewed service registration, model-file invento
 
 A lightweight dashboard hosted on your Spark, accessed through your browser and Tailscale. 한국어·영어 설정 마법사, 실제 하드웨어 상태, 로컬 트레이, 등록한 모델 서비스 제어를 제공합니다.
 
-> New in 0.3.2: black/white modes, consistent color presets, phone-focused layouts, safer live service states and bilingual LLM installation/Model Bay playbooks.
-> 0.3.2: 블랙/화이트 모드·컬러 프리셋·휴대폰 레이아웃·서비스 상태/제어 오류 수정·LLM 설치 및 Model Bay 작업 안내를 제공합니다. 개인 설정과 모델 파일은 설치 패키지에 포함하지 않습니다.
+> New in 0.3.3: resilient multi-client polling, per-profile boot autostart, current Harness app links, and opt-in official application updates with backup/recovery in Details.
+> 0.3.3: 다중 접속·연결 복구 개선, 프로필별 부팅 자동 시작, 현재 Harness 인증 연결, 상세창의 선택적 공식 앱 업데이트·백업·복구를 제공합니다. 개인 설정과 모델 파일은 배포하지 않습니다.
 
 ## Install / 설치
 
-1. Download **dgx-spark-control_0.3.2_arm64.deb** from [Releases](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.3.2) onto Spark. Spark에 설치 파일을 다운로드합니다.
+1. Download **dgx-spark-control_0.3.3_arm64.deb** from [Releases](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.3.3) onto Spark. Spark에 설치 파일을 다운로드합니다.
 2. Open it in the software installer, or run the following in its download folder. 파일을 열어 설치하거나 다운로드 폴더에서 실행합니다:
 
 ```bash
-sudo apt install ./dgx-spark-control_0.3.2_arm64.deb
+sudo apt install ./dgx-spark-control_0.3.3_arm64.deb
 ```
 
 3. Open **DGX-SPARK-Control Setup / 초기 설정** from Applications, or run as your normal user (without sudo):
@@ -58,6 +58,10 @@ Never put passwords in command arguments or chat. 비밀번호는 명령줄이�
 
 Install the new `.deb` using apt. Keep settings, password, remembered browser logins and model registrations. 새 패키지 설치 시 기존 설정과 로그인을 보존합니다. The tray's update action opens the release page; it does not silently install anything. [Migration, rollback and removal](docs/UPDATES.md).
 
+Application updates are separate: Model Bay → Details supports explicitly configured Harness/Hermes/ComfyUI installations. Stop the app yourself before confirming an update. Checking creates no backup; applying retains one successful managed recovery backup per service. Failed recovery needs local review. [Setup and limits](docs/SERVICE-UPDATES.md).
+
+앱 업데이트는 대시보드 패키지 업데이트와 별개입니다. 지원 설치본을 로컬에서 연결한 뒤 상세창에서 확인·적용하며 실행 중에는 차단합니다. [한글 사용 안내](docs/GUIDE.ko.md#앱-업데이트-033).
+
 The archive remains available for existing script installations; do not mix update methods. [Technical installation guide](docs/INSTALL.md).
 
 ## Low overhead
@@ -65,8 +69,8 @@ The archive remains available for existing script installations; do not mix upda
 - One standard-library Python server; optional GTK tray with no telemetry polling.
 - On-demand shared metrics at most once per five seconds; no client requests means no collection.
 - Server + tray combined limit: **480 MiB = 503,316,480 bytes**, no swap. Models, browsers, setup and Tailscale are outside this budget.
-- No pip, npm, Docker, database server or resident LLM required.
-- Hard limits are not performance proof. [Actual validation and limitations](docs/releases/0.3.2.md).
+- No pip, npm, Docker, database server or resident LLM required for the dashboard. Optional application updates use the existing app toolchain in a temporary worker (up to 2 GiB), outside the 480 MiB monitoring limit; see [service updates](docs/SERVICE-UPDATES.md).
+- Hard limits are not performance proof. [Actual validation and limitations](docs/releases/0.3.3.md).
 
 ## Features and limits
 

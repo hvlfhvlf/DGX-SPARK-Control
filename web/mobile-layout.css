@@ -61,7 +61,7 @@
  .service-profile:empty,.service-model-meta:empty,.service-operation:empty{display:none}
  .service-health{min-height:0;padding-top:6px}
  .service-operation{min-height:0}
- .service-buttons{grid-template-rows:none;grid-auto-rows:minmax(44px,auto);align-self:end}
+ .service-buttons{grid-template-rows:44px 44px;align-self:end}
  .service-toolbar{align-items:center}
  .service-toolbar-actions{display:flex;gap:6px;justify-content:flex-end}
  .service-toolbar .button{padding:8px 6px;font-size:10px}
@@ -127,4 +127,11 @@
  .service-count{display:block;margin-bottom:6px}
  .service-toolbar-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
  .service-toolbar-actions #connectionAdd{grid-column:auto;grid-row:auto}
+}
+
+@media(max-width:600px){
+ .service-card{grid-template-columns:minmax(0,1fr)}
+ .service-card>*{min-width:0}
+ .service-card-top .service-state{min-width:0;overflow-wrap:anywhere}
+ .service-card-top .service-edit{margin-right:0}
 }

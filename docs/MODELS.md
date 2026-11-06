@@ -1,6 +1,6 @@
 # 서비스·모델 연결 / Services and models
 
-0.3.2: **설치된 사용자 systemd 서비스**를 등록합니다. Dashboard runs no inference engine itself. Engine/weight installation and deletion remain separate tasks.
+0.3.3: **설치된 사용자 systemd 서비스**를 등록합니다. Dashboard runs no inference engine itself. Engine/weight installation and deletion remain separate tasks.
 
 ## Structure / 구조
 

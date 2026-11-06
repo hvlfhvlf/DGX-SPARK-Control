@@ -4,11 +4,11 @@ const serviceLabels={start:['Start','시작'],stop:['Stop','정지'],restart:['R
 const serviceText=key=>serviceLabels[key]?tr(...serviceLabels[key]):key;
 const serviceRows=()=>liveNode.services?.services||[];
 const serviceBusy=s=>s.operation&&['queued','running'].includes(s.operation.status);
-function serviceCanControl(s){return !!s&&liveNode.connected&&liveNode.servicesConnected&&s.controllable&&!serviceBusy(s)&&!['starting','stopping','unknown'].includes(s.state);}
+function serviceCanControl(s){return !!s&&liveNode.connected&&!liveNode.connectionDelayed&&liveNode.servicesConnected&&!liveNode.services?.maintenance&&s.controllable&&!serviceBusy(s)&&!['starting','stopping','unknown'].includes(s.state);}
 function serviceRetryAction(s){return s.operation?.status==='failed'&&s.operation.action==='stop'?'stop':s.state==='running'?'restart':'start';}
 function serviceConfirmationValid(review){const s=serviceRows().find(s=>s.id===review.id);return !!s&&serviceCanControl(s)&&s.profile_id===review.profile&&liveNode.services.revision===review.revision;}
 function serviceReadiness(s){return s.state==='stopped'?tr('Not running','실행 중 아님'):s.state==='failed'?tr('Process failed','프로세스 실행 실패'):serviceText(s.readiness);}
-function serviceNeedsPolling(){return ['overview','models','jobs'].includes(state.view)||!!document.querySelector('[data-service-detail-status], [data-service-confirm]')||(typeof watchedOperations!=='undefined'&&watchedOperations.size>0);}
+function serviceNeedsPolling(){const modal=document.getElementById('modal');return ['overview','models','jobs'].includes(state.view)||!!(modal&&!modal.hidden&&modal.querySelector('[data-service-detail-status], [data-service-confirm]'))||(typeof watchedOperations!=='undefined'&&watchedOperations.size>0);}
 const serviceUserErrors={
  review_changed:['Service settings or status changed. Close this dialog and review the action again.','서비스 설정 또는 상태가 바뀌었습니다. 이 창을 닫고 동작을 다시 확인하세요.'],
  control_not_allowed:['Control is not enabled for this profile. Review Edit → Connection.','이 프로필의 제어 권한이 꺼져 있습니다. 편집 → 연결 설정을 확인하세요.'],
@@ -29,7 +29,7 @@ function serviceCard(s){
   <div class="service-card-main"><h2 data-service-value="title" title="${escapeHTML(s.model_name||s.name)}">${escapeHTML(s.model_name||s.name)}</h2><p class="service-profile" data-service-value="profile">${s.model_name?`${tr('Quantization','양자화')} · ${escapeHTML(s.quantization||tr('Not verified','확인 전'))}`:''}</p><div class="service-model-meta" data-service-value="engine" title="${escapeHTML(metadata.join(' · '))}">${escapeHTML(s.inference_engine||s.serving_engine||'')}</div></div>
   <div class="service-health"><span data-service-value="readiness">${serviceReadiness(s)}</span><span data-service-value="queue">${queue?`${tr('Jobs','작업')} ${s.running_jobs??'—'} / ${tr('Queued','대기')} ${s.pending_jobs??'—'}`:!s.controllable?tr('Read only','조회 전용'):''}</span></div>
   <p class="service-operation" data-service-value="operation">${busy?tr('Applying operation…','요청 처리 중…'):s.operation?`${tr('Last action','최근 요청')} · ${serviceText(s.operation.action)} · ${serviceText(s.operation.status)}`:''}</p>
-  <div class="service-buttons"><button class="button" data-service-action="${s.state==='running'?'stop':'start'}" data-service-id="${escapeHTML(s.id)}" ${can?'':'disabled'}>${s.state==='running'?tr('STOP','정지'):tr('START','시작')}</button><button class="button secondary" data-service-detail="${escapeHTML(s.id)}">${tr('DETAILS','상세')}</button>${appAccessMarkup(s)}</div>
+  <div class="service-buttons">${appAccessMarkup(s)}<div class="service-secondary-actions"><button class="button" data-service-action="${s.state==='running'?'stop':'start'}" data-service-id="${escapeHTML(s.id)}" ${can?'':'disabled'}>${s.state==='running'?tr('STOP','정지'):tr('START','시작')}</button><button class="button secondary" data-service-detail="${escapeHTML(s.id)}">${tr('DETAILS','상세')}</button></div></div>
  </article>`;
 }
 installedModels=function(){return pageHeading('MODEL BAY','02',tr('REGISTERED SERVICES','등록된 서비스'))+`
@@ -48,7 +48,7 @@ function refreshServiceCards(){
    current.querySelectorAll('[data-service-value]').forEach(el=>{const fresh=t.content.querySelector(`[data-service-value="${el.dataset.serviceValue}"]`);if(el.dataset.serviceValue==='engine'){if(el.innerHTML!==fresh.innerHTML)el.innerHTML=fresh.innerHTML;}else if(el.textContent!==fresh.textContent)el.textContent=fresh.textContent;el.className=fresh.className;if(fresh.title)el.title=fresh.title;});
    const button=current.querySelector('[data-service-action]'),next=t.content.querySelector('[data-service-action]');button.disabled=next.disabled;button.dataset.serviceAction=next.dataset.serviceAction;button.textContent=next.textContent;
    current.querySelector('[data-service-edit]').setAttribute('aria-label',tr('Edit ','편집: ')+s.name);
-   const oldLink=current.querySelector('[data-service-open]'),newLink=t.content.querySelector('[data-service-open]');if(oldLink&&newLink){if(oldLink.outerHTML!==newLink.outerHTML)oldLink.replaceWith(newLink);}else if(oldLink)oldLink.remove();else if(newLink)current.querySelector('.service-buttons').append(newLink);
+   const oldLink=current.querySelector('[data-service-open]'),newLink=t.content.querySelector('[data-service-open]');if(oldLink&&newLink){if(oldLink.outerHTML!==newLink.outerHTML)oldLink.replaceWith(newLink);}else if(oldLink)oldLink.remove();else if(newLink)current.querySelector('.service-buttons').prepend(newLink);
   });
  }
  const count=document.querySelector('.service-count');if(count)count.textContent=`${rows.length} ${tr('SERVICES','서비스')}`;
@@ -57,15 +57,16 @@ function refreshServiceCards(){
  if(typeof refreshServiceSignals==='function')refreshServiceSignals();
 }
 function refreshServiceDetail(){
+ if(document.getElementById('modal')?.hidden)return;
  const rows=serviceRows(),summary=document.querySelector('[data-service-detail-status]');
  if(summary){
   const s=rows.find(s=>s.id===summary.dataset.serviceDetailStatus),actions=document.querySelector('.service-detail-actions');
   const select=actions?.querySelector('[data-service-select]'),restart=actions?.querySelector('[data-service-action]');
   const changed=select&&Number(select.dataset.revision)!==liveNode.services.revision;
   if(select)select.disabled=!s||changed||!liveNode.connected||!liveNode.servicesConnected||s.profiles.length<2||!['stopped','failed'].includes(s.state)||serviceBusy(s);
-  if(restart)restart.disabled=!serviceCanControl(s)||changed;
-  summary.textContent=!s?serviceError('unknown_service'):changed?serviceError('review_changed'):liveNode.connected&&liveNode.servicesConnected?`${serviceText(s.state)} / ${serviceReadiness(s)}`:tr('Connection lost · status unavailable','연결 끊김 · 상태 확인 불가');
-  const note=document.querySelector('[data-service-connection-note]');if(note){const message=s&&liveNode.connected&&liveNode.servicesConnected?appConnectionNote(s):'';note.textContent=message;note.hidden=!message;}
+  if(restart){restart.disabled=!serviceCanControl(s)||changed;restart.dataset.serviceAction=s?.state==='running'?'restart':'start';restart.textContent=s?.state==='running'?tr('RESTART…','재시작…'):tr('START…','시작…');}
+  summary.textContent=!s?serviceError('unknown_service'):changed?serviceError('review_changed'):liveNode.connected&&!liveNode.connectionDelayed&&liveNode.servicesConnected?`${serviceText(s.state)} / ${serviceReadiness(s)}`:tr('Connection lost · status unavailable','연결 끊김 · 상태 확인 불가');
+  const note=document.querySelector('[data-service-connection-note]');if(note){const message=s&&liveNode.connected&&!liveNode.connectionDelayed&&liveNode.servicesConnected?appConnectionNote(s):'';note.textContent=message;note.hidden=!message;}
   const oldLink=actions?.querySelector('[data-service-open]'),html=s?appAccessMarkup(s):'';
   if(oldLink){if(oldLink.outerHTML!==html)oldLink.outerHTML=html;}else if(html)actions?.insertAdjacentHTML('beforeend',html);
  }
@@ -92,13 +93,10 @@ function showServiceOrder(){
 }
 async function reloadServiceDisplay(){liveNode.services=await api('services');liveNode.servicesConnected=true;refreshServiceCards();}
 document.addEventListener('submit',event=>{if(event.target.id==='serviceEditForm'){event.preventDefault();event.target.querySelector('[data-service-save]').click();}});
-function showService(s){
- metricExplorer=null;
- showModal(`<h2 id="modalTitle">${escapeHTML(s.model_name||s.name)}</h2><p class="service-detail-status" data-service-detail-status="${escapeHTML(s.id)}">${serviceText(s.state)} / ${serviceReadiness(s)}</p><p class="muted" data-service-connection-note ${appConnectionNote(s)?'':'hidden'}>${appConnectionNote(s)}</p><div class="service-detail-grid"><div><span>${tr('CURRENT PROFILE','현재 프로필')}</span><strong>${escapeHTML(s.profile_name)}</strong></div><div><span>${tr('CONTROL','제어 권한')}</span><strong>${s.controllable?tr('Allowed','허용됨'):tr('Read only','조회 전용')}</strong></div></div>${s.model_name||s.quantization||s.inference_engine||s.serving_engine?`<dl class="service-engine-details">${[[tr('Model','모델'),s.model_name],[tr('Quantization','양자화'),s.quantization],[tr('Inference engine','추론 엔진'),s.inference_engine],[tr('Serving engine','서빙 엔진'),s.serving_engine]].filter(x=>x[1]).map(([k,v])=>`<div><dt>${k}</dt><dd>${escapeHTML(v)}</dd></div>`).join('')}</dl>`:''}<label class="service-select-label" for="serviceProfile">${tr('Launch profile','실행 프로필')}</label><select id="serviceProfile">${s.profiles.map(p=>`<option value="${escapeHTML(p.id)}" ${s.profile_id===p.id?'selected':''}>${escapeHTML(p.name)}${p.controllable?'':tr(' · read only',' · 조회 전용')}</option>`).join('')}</select><div class="service-detail-actions"><button class="button secondary" data-service-select="${escapeHTML(s.id)}" data-revision="${liveNode.services.revision}" ${s.profiles.length>1&&['stopped','failed'].includes(s.state)&&liveNode.servicesConnected&&!serviceBusy(s)?'':'disabled'}>${tr('SELECT PROFILE','프로필 선택')}</button><button class="button secondary" data-service-action="restart" data-service-id="${escapeHTML(s.id)}" ${serviceCanControl(s)?'':'disabled'}>${tr('RESTART…','재시작…')}</button>${appAccessMarkup(s)}</div><p>${tr('Stop this service before changing profiles. Selecting a profile does not start it or delete model files. Restart interrupts active requests.','프로필을 바꾸기 전에 서비스를 정지하세요. 선택만으로 실행되거나 모델 파일이 삭제되지 않습니다. 재시작은 진행 중 요청을 중단합니다.')}</p>${s.adapter==='hermes'?`<p>${tr('Gateway process only. Provider connectivity and active conversations are not measured.','게이트웨이 프로세스 상태입니다. 제공자 연결과 진행 중 대화는 측정하지 않습니다.')}</p>`:''}<details class="service-notes"><summary>${tr('Integration & troubleshooting','연결·문제 해결 안내')}</summary><p>${tr('Use dgx-spark-control services check/apply on Spark. Registry changes are detected automatically. Edit → Connection changes API port and app URL; engine launch commands and private paths stay managed on Spark. Read docs/MODELS.md and the Korean/English handoff guide.','Spark에서 dgx-spark-control services check/apply로 등록합니다. 변경 사항은 자동 반영됩니다. 편집 → 연결 설정에서 API 포트와 앱 주소를 바꿀 수 있습니다. 엔진 실행 명령과 개인 경로는 Spark에서 관리합니다. docs/MODELS.md와 한·영 LLM 작업 가이드를 참고하세요.')}</p><p>${tr('Detailed logs stay on Spark; prompts and credentials are not sent to this interface. A failed start may leave the process running: inspect its status before retrying.','상세 로그는 Spark에 남으며 프롬프트와 인증 정보는 이 화면으로 전송하지 않습니다. 시작 확인 실패 후에도 프로세스가 실행 중일 수 있으니 상태를 확인하세요.')}</p></details>`);
- $('#modalKind').textContent=tr('SERVICE DETAILS','서비스 상세');
-}
+
 document.addEventListener('click',async event=>{
  const b=event.target.closest('button');if(!b)return;
+ if(b.hasAttribute('data-auth-app'))return; // Dedicated authenticated app handoff handles this button.
  if(b.dataset.view==='models'){queueMicrotask(()=>refreshLive());return;}
  if(!b.id.startsWith('service')&&!Object.keys(b.dataset).some(k=>k.startsWith('service')))return;
  event.stopImmediatePropagation();

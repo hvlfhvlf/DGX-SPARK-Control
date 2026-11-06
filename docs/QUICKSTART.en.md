@@ -1,10 +1,10 @@
 # Easy installation on DGX Spark — English
 
-**0.3.2 · Ubuntu 24.04 / ARM64** · [한국어](QUICKSTART.ko.md)
+**0.3.3 · Ubuntu 24.04 / ARM64** · [한국어](QUICKSTART.ko.md)
 
 ## 1. Download the installer
 
-Download **dgx-spark-control_0.3.2_arm64.deb** to your Spark from [GitHub Releases](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.3.2).
+Download **dgx-spark-control_0.3.3_arm64.deb** to your Spark from [GitHub Releases](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.3.3).
 
 Download **SHA256SUMS** from the same release and verify the package before installation:
 
@@ -17,7 +17,7 @@ Open it in your software installer and choose **Install**. Administrator authent
 If no graphical package installer is available, or you prefer a terminal, run this from the download folder:
 
 ```bash
-sudo apt install ./dgx-spark-control_0.3.2_arm64.deb
+sudo apt install ./dgx-spark-control_0.3.3_arm64.deb
 ```
 
 Include `./`. Change to the actual download directory first. Run the following initial setup **as your normal user, without sudo**.
@@ -119,8 +119,16 @@ systemctl --user show dgx-spark-control.slice -p MemoryCurrent -p MemoryMax
 
 Server + tray have a **480 MiB** combined limit. Setup, browsers, model engines and Tailscale are outside that budget. This release targets DGX Spark Ubuntu ARM64; Windows and other platforms are on hold.
 
-[Full user guide](GUIDE.en.md) · [Validation and limitations](releases/0.3.2.md)
+[Full user guide](GUIDE.en.md) · [Validation and limitations](releases/0.3.3.md)
 
 ## LLM / Agent
 
 For agent-assisted installation and Model Bay changes, use the [playbook and copyable prompts](LLM-GUIDE.en.md).
+
+## Service startup and application updates (0.3.3)
+
+Model Bay → Details → **Start when Spark boots** changes the selected registered profile's actual user-service setting. It does not start or stop it now. Before-login startup requires linger; competing model profiles and memory capacity must be reviewed.
+
+Details can show the installed application version and **Check for updates → Update** for explicitly configured supported Harness, Hermes and ComfyUI installations. A local operator must bind the existing installation first; discovery alone does not grant update permission. Stop the app before confirming **Back up & update**. Checking creates no backup. Applying retains one successful managed recovery backup per service; unresolved failure backups are kept for review. Afterwards start the app manually and verify its normal work.
+
+The temporary installer can use up to **2 GiB** outside the dashboard/tray's 480 MiB limit and needs free disk space. It is not a resident agent. Models, drivers and custom nodes are not upgraded. [Full guide](GUIDE.en.md) · [Local binding and recovery](SERVICE-UPDATES.md).

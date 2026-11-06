@@ -19,3 +19,11 @@ service-operations.json
 *.pem
 *.key
 *.p12
+
+# Local application maintenance state
+service-updates.json
+service-update-state.json
+service-update-active.json
+update-check-*.json
+service-update-backups/
+service-update-jobs/

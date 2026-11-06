@@ -1,6 +1,6 @@
 # Ask an LLM to install and manage Model Bay
 
-**0.3.2 · DGX Spark / Ubuntu ARM64** · [한국어](LLM-GUIDE.ko.md)
+**0.3.3 · DGX Spark / Ubuntu ARM64** · [한국어](LLM-GUIDE.ko.md)
 
 Give this document to the agent doing the work. A coding agent with authorized Spark terminal/SSH access can execute installation and registration; a chat-only LLM can only explain them. The dashboard does not run a resident LLM agent.
 
@@ -38,12 +38,12 @@ Do not interrupt running models or enable public access/Funnel.
 Agent procedure:
 
 1. Inspect OS, `uname -m`, and package/archive ownership (for example `dpkg-query -W dgx-spark-control`). A not-installed result is an expected branch. Do not mix package and archive update paths.
-2. Download the `.deb` and `SHA256SUMS` from the [official release](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.3.2) into the same private working directory. Match the selected version and exact artifact name.
+2. Download the `.deb` and `SHA256SUMS` from the [official release](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.3.3) into the same private working directory. Match the selected version and exact artifact name.
 3. Run these in the download directory. Confirm that the intended `.deb` reports **OK** before installing.
 
 ```bash
 sha256sum --ignore-missing --check SHA256SUMS
-sudo apt install ./dgx-spark-control_0.3.2_arm64.deb
+sudo apt install ./dgx-spark-control_0.3.3_arm64.deb
 dgx-spark-control setup --check
 dgx-spark-control setup --cli --lang en
 ```
@@ -133,3 +133,11 @@ GitHub publication: only if requested
 ```
 
 When new code is necessary, read [AGENTS.md](../AGENTS.md) and [Architecture](ARCHITECTURE.md), then extend adapters with explicit capabilities. Follow [THEMING.md](THEMING.md) for UI additions. Registering one model does not require rewriting the dashboard.
+
+## 0.3.3: autostart, Harness and app maintenance
+
+- Read [service updates](SERVICE-UPDATES.md) before opting an installation into updates. Inspect the actual unit, root, environment/data, runtime and official source/channel. Back up the private local binding; never publish it. The web UI cannot execute arbitrary installer commands.
+- Do not enable boot autostart implicitly while registering/replacing a model. Review dependencies and concurrent memory requirements. Disable the old profile's autostart before rebinding; verify the requested final state without rebooting just for a test.
+- For Harness, configure a token-free HTTPS app address. Open App obtains the current startup authentication URL on demand; never copy tokens into registry fields or logs. Process running does not prove that its separately configured LLM is ready.
+- Updating the dashboard package is not authorization to update or stop applications. Obtain the intended app/version scope, stop it explicitly when authorized, then use the reviewed update flow. Record backup, validation and recovery results separately. Do not claim full workflow compatibility from a CLI/import check.
+- Preserve settings, remembered sessions, models and unrelated service processes. Report installed version and the exact release/commit and retain local evidence outside the repository.

@@ -1,3 +1,49 @@
+# 0.3.3 — 2026-11-06
+
+- Publish the tested rc1–rc6 runtime: secure on-demand Harness app opening and correct start-after-stop port checks.
+- Add opt-in official Harness/Hermes/ComfyUI update checks, version display, stopped-app guards, private backups and failure recovery in service Details.
+- Add per-profile boot autostart controls with actual user-systemd state, conflict/revision checks and no immediate lifecycle change.
+- Reduce history/activity requests, bound multi-client concurrency and distinguish initial connection, delayed updates and disconnected nodes.
+- Stop hidden-dialog polling and ignore stale update responses; preserve settings, remembered logins, model processes and the 480 MiB monitoring cap.
+- Align Korean/English installation, user and LLM guides; document temporary updater resources and recovery limits.
+
+Validation and limitations: [0.3.3 release record](docs/releases/0.3.3.md). Candidate notes below are historical development records, now incorporated into 0.3.3.
+
+# 0.3.3~rc6 — private candidate, 2026-11-06
+
+- Stop service polling triggered solely by hidden Details/confirmation content. Visible service pages and pending operations still refresh.
+- Pause app-update status polling when Details closes or the tab is hidden; resume visible Details when returning.
+- Ignore late update-check failures after closing/replacing the dialog, avoiding unexpected modal reopening.
+- Show initial telemetry/inference loading as Connecting instead of failure; unknown CPU core count is unavailable, not zero.
+- No model lifecycle changes, new daemon, schema migration or GitHub publication.
+
+# 0.3.3~rc5 — private candidate, 2026-11-06
+
+- Separate telemetry connection state from optional history/activity and rendering errors. Show delayed updates before repeated failure; pause controls and recover automatically.
+- Fetch history only for visible graphs/details, merge incremental samples with a restart epoch, cache settings for 60 seconds and activity only in its tab.
+- Bound each browser to 3 concurrent requests and 24 queued requests; jitter poll cycles and retry GET overload once, never replay writes. Keep 8 server workers; bounded admission returns HTTP 503/Retry-After.
+- Preserve authentication, configuration, running models and the 480 MiB cap. No GitHub publication.
+
+# 0.3.3~rc2 — local candidate, 2026-11-05
+
+## 0.3.3~rc4 (private candidate)
+- Service Details: per-profile boot autostart ON/OFF reads and changes actual user-systemd settings, without starting/stopping the current process.
+- Registered units only; authentication, Origin, revision and maintenance lock checks. Detect linger, unsupported installs and conflicting boot profiles; disable autostart before rebinding enabled profiles.
+- No recurring poll, extra daemon, credentials or public release.
+
+## 0.3.3~rc3 — local candidate
+
+- Details: installed application version, explicit official update check and reviewed update action; compact responsive layout.
+- Opt-in Harness, Hermes and ComfyUI adapters; stopped-process and unit guards, private full environment/state backups, automatic failure recovery.
+- A bounded transient updater runs outside the dashboard memory slice; services remain stopped. No GitHub publication.
+
+- Fix immediate start after HTTP service stop: ignore leftover TIME_WAIT sockets in port preflight while still refusing an active listener. Add a real-loopback regression. GitHub publication remains on hold.
+
+# 0.3.3~rc1 — local candidate, 2026-11-05
+
+- Add authenticated, on-demand DeepSeek Harness app opening for an explicitly controllable `deepseek-harness.service` registration. Read only a bounded local startup log; require matching configured HTTPS origin and a successful local authentication exchange. Never persist or list the launch token.
+- Preserve process-only status, existing model services, authentication and registry schema. No engine installation or automatic inference request. Not published to GitHub.
+
 # 0.3.2 — 2026-11-05
 
 - Publish rc1/rc2 state and control safety fixes: current versus historical health, invocation/revision-aware readiness, reviewed-action binding, failed-stop retry and stale-session response rejection.

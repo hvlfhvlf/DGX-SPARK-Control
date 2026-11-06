@@ -111,3 +111,12 @@ A local administrator may grant the selected OS account only the normal login1 r
 ## Appearance architecture
 
 `web/theme.css` is the single palette source for black/white modes and the three accent presets. Components use semantic variables, including separate foreground and fill accents. `theme-init.js` restores validated browser-local preferences before paint; `preferences.js` applies changes without replacing forms or live panels. Read [THEMING.md](THEMING.md) before adding buttons, charts, dialogs or color states. Theme tests guard against new hardcoded component colors and unreadable palette pairs.
+
+## Connection bounds (0.3.3)
+
+Core metrics precede optional reads. Each browser allows 3 active requests and 24 waiters; the next poll starts 5–5.75 seconds after completion. A first core failure shows delay; two failures or 20 seconds since success shows disconnected. Rendering errors do not change connectivity or stop scheduling. Incremental history uses a per-process epoch and timestamp cursor, capped at 720 samples/one hour. Activity loads only on its tab at most every 10 seconds; settings cache is 60 seconds.
+
+Eight server workers are retained. Admission waits at most 250 ms then sends HTTP 503 with Retry-After: 1 and a bounded write timeout. GET retries once with jitter; writes never replay. These bounds do not guarantee network availability.
+
+
+In 0.3.3: service polling checks modal visibility, not just retained DOM content. Update status checks stop for closed dialogs/background tabs, and late update responses cannot reopen a dismissed dialog. Backend jobs continue independently of dialog visibility.

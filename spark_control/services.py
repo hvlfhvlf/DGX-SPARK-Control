@@ -14,6 +14,7 @@ import time
 import uuid
 from .startup import Observations
 from .local_http import connection
+from .app_launch import supported as app_launch_supported, harness_url
 from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -21,7 +22,7 @@ from urllib.parse import urlsplit
 ID = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}\Z")
 UNIT = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.@-]{0,127}\.service\Z")
 ADAPTERS = ('process', 'comfyui', 'openai-compatible', 'hermes')
-PROPERTIES = 'Id,LoadState,ActiveState,SubState,MainPID,MemoryCurrent,InvocationID,Result,ExecMainStartTimestampMonotonic,FragmentPath'
+PROPERTIES = 'Id,UnitFileState,LoadState,ActiveState,SubState,MainPID,MemoryCurrent,InvocationID,Result,ExecMainStartTimestampMonotonic,FragmentPath'
 
 
 class ServiceError(ValueError):
@@ -141,6 +142,8 @@ class Registry:
         self.directory = Path(directory)
         self.directory.mkdir(mode=0o700, parents=True, exist_ok=True)
         self.path = self.directory / 'services.json'
+        if self.path.exists():
+            return
         with self.exclusive():
             if not self.path.exists():
                 value = dict(registry_schema=1, revision=0, services=[], profiles=[], assets=[])
@@ -151,13 +154,15 @@ class Registry:
                 atomic(self.path, validate(value))
 
     @contextmanager
-    def exclusive(self):
+    def exclusive(self, check_update=True):
         fd = os.open(self.directory / 'services.lock', os.O_RDWR | os.O_CREAT, 0o600)
         try:
             try:
                 fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
                 raise ServiceError('operation_in_progress') from None
+            if check_update and (self.directory / 'service-update.lock').exists():
+                raise ServiceError('update_in_progress')
             yield
         finally:
             os.close(fd)
@@ -183,6 +188,8 @@ class Registry:
                 changed.append(old['manager']['unit'])
         if changed:
             states = system_states(changed)
+            if any(states.get(unit, {}).get("UnitFileState") in ("enabled", "enabled-runtime") for unit in changed):
+                raise ServiceError("disable_autostart_before_rebinding")
             if any(process_state(states.get(unit, {})) not in ('stopped', 'failed') for unit in changed):
                 raise ServiceError('stop_before_rebinding')
         value['revision'] = revision + 1
@@ -325,7 +332,7 @@ class Services:
                     rows.append(dict(startup=startup,id=service['id'], name=service['name'], adapter=service['adapter'], state=state,
                         profile_id=p['id'], profile_name=p['name'], controllable=p['allow_control'] and state != 'unknown',
                         model_name=p['model_name'], quantization=p['quantization'], inference_engine=p['inference_engine'], serving_engine=p['serving_engine'],
-                        open_url=p['open_url'], profiles=[dict(id=q['id'], name=q['name'], controllable=q['allow_control'], state=process_state(states.get(q['manager']['unit'], {}))) for q in profiles],
+                        open_url=p['open_url'], authenticated_launch=app_launch_supported(p), profiles=[dict(id=q['id'], name=q['name'], controllable=q['allow_control'], state=process_state(states.get(q['manager']['unit'], {}))) for q in profiles],
                         readiness_checked_at=checked,**readiness))
                 self.cached = rows
                 self.readiness_runs = readiness_runs
@@ -335,7 +342,27 @@ class Services:
             ops = copy.deepcopy(self.operations[-20:])
         for row in rows:
             row['operation'] = next((o for o in reversed(ops) if o['service_id'] == row['id']), None)
-        return dict(revision=value['revision'], services=rows, operations=ops)
+        return dict(revision=value['revision'], services=rows, operations=ops,
+                    maintenance=(self.registry.directory / 'service-update.lock').exists())
+
+    def open_app(self, data):
+        with self.registry.exclusive():
+            value = self.registry.read()
+            if type(data.get('revision')) is not int or data['revision'] != value['revision']:
+                raise ServiceError('revision_conflict')
+            service = next((s for s in value['services'] if s['id'] == data.get('id')), None)
+            if not service:
+                raise ServiceError('app_launch_unavailable')
+            profile = next(p for p in value['profiles'] if p['id'] == service['default_profile_id'])
+            if not app_launch_supported(profile):
+                raise ServiceError('app_launch_unavailable')
+            unit = profile['manager']['unit']
+            if process_state(system_states([unit]).get(unit, {})) != 'running':
+                raise ServiceError('app_launch_unavailable')
+            try:
+                return harness_url(profile)
+            except ValueError:
+                raise ServiceError('app_launch_unavailable') from None
 
     def update_operation(self, op, **changes):
         with self.op_lock:
@@ -470,6 +497,9 @@ class Services:
             if action in ('start', 'restart'):
                 if action in ('start','restart') and state in ('stopped','failed') and target['probe']:
                     with socket.socket() as sock:
+                        # A stopped HTTP server can leave TIME_WAIT sockets. Reuse
+                        # permits those while an actual listening socket still conflicts.
+                        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                         try:
                             sock.bind(('127.0.0.1', urlsplit(target['probe']['origin']).port))
                         except OSError:

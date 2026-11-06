@@ -1,6 +1,6 @@
 # LLM에게 설치·Model Bay 관리를 맡기는 방법
 
-**0.3.2 · DGX Spark / Ubuntu ARM64** · [English](LLM-GUIDE.en.md)
+**0.3.3 · DGX Spark / Ubuntu ARM64** · [English](LLM-GUIDE.en.md)
 
 이 문서를 작업할 LLM에게 링크로 전달하세요. Spark 터미널/SSH 접근 권한이 있는 코딩 에이전트라면 설치와 등록을 실행할 수 있습니다. 일반 채팅만 가능한 LLM은 안내만 할 수 있습니다. 대시보드 자체에 LLM이 내장되거나 상주하지 않습니다.
 
@@ -40,12 +40,12 @@ OS/아키텍처와 기존 패키지·압축판 설치 여부를 확인하고,
 LLM의 실행 순서:
 
 1. `uname -m`, OS 정보와 `dpkg-query -W dgx-spark-control` 등으로 설치 유형을 확인합니다. 미설치는 정상적인 분기입니다. 패키지판/압축판 업데이트를 혼용하지 않습니다.
-2. [공식 릴리스](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.3.2)의 `.deb`와 `SHA256SUMS`를 같은 비공개 작업 폴더에 받습니다. 선택 버전과 파일명, 체크섬 대상이 일치해야 합니다.
+2. [공식 릴리스](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.3.3)의 `.deb`와 `SHA256SUMS`를 같은 비공개 작업 폴더에 받습니다. 선택 버전과 파일명, 체크섬 대상이 일치해야 합니다.
 3. 다음 명령을 다운로드 폴더에서 실행합니다. 검증 결과에 해당 `.deb`가 **OK**로 표시된 것을 확인한 뒤 설치합니다.
 
 ```bash
 sha256sum --ignore-missing --check SHA256SUMS
-sudo apt install ./dgx-spark-control_0.3.2_arm64.deb
+sudo apt install ./dgx-spark-control_0.3.3_arm64.deb
 dgx-spark-control setup --check
 dgx-spark-control setup --cli --lang ko
 ```
@@ -135,3 +135,11 @@ GitHub 업로드 여부: 사용자가 요청한 경우에만
 ```
 
 새 엔진에 맞는 코드가 필요하면 [AGENTS.md](../AGENTS.md)와 [아키텍처](ARCHITECTURE.md)를 읽고 capability가 명확한 어댑터로 확장합니다. UI는 [테마 계약](THEMING.md)을 따릅니다. 모델 하나를 등록하기 위해 앱 전체를 다시 작성할 필요는 없습니다.
+
+## 0.3.3: 자동 시작·Harness·앱 유지관리
+
+- 업데이트를 연결하기 전 [서비스 업데이트 안내](SERVICE-UPDATES.md)를 읽고 실제 서비스 유닛·설치 위치·데이터·런타임·공식 소스와 채널을 확인합니다. 개인 연결 파일은 로컬에서 백업하며 공개하지 않습니다. 웹에서 임의 설치 명령을 실행할 수 없습니다.
+- 모델 등록·교체만 요청받았다면 부팅 자동 시작을 임의로 켜지 않습니다. 의존성과 동시 실행 메모리를 검토하고, 실행 대상을 바꾸기 전 이전 프로필의 자동 시작을 끕니다. 검증만을 위해 재부팅하지 않습니다.
+- Harness에는 토큰 없는 HTTPS 앱 주소를 설정합니다. 앱 열기는 현재 시작 토큰에 맞는 인증 주소를 필요할 때 얻습니다. 토큰을 등록 필드·로그에 복사하지 않습니다. 프로세스 실행과 별도 추론 서버의 준비 상태를 구분합니다.
+- 대시보드 패키지 업데이트 요청만으로 다른 앱을 정지·업데이트하지 않습니다. 대상 앱·버전을 확인하고 허용된 범위에서 정지한 뒤 검토형 업데이트를 진행합니다. 백업·검사·복구 결과를 나눠 보고하고 기본 CLI/import 검사만으로 전체 작업 호환성을 보장하지 않습니다.
+- 기존 설정·기기 로그인·모델·관련 없는 프로세스를 보존합니다. 설치 버전·정확한 릴리스/커밋을 보고하고 개인 검증 자료는 저장소 밖에 둡니다.
