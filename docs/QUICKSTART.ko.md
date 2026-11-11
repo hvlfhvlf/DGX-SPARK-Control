@@ -1,10 +1,10 @@
 # DGX Spark 간편 설치 — 한국어
 
-**0.3.3 · Ubuntu 24.04 / ARM64** · [English](QUICKSTART.en.md)
+**0.3.4 · Ubuntu 24.04 / ARM64** · [English](QUICKSTART.en.md)
 
 ## 1. 설치 파일 받기
 
-[GitHub 릴리스](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.3.3)에서 **dgx-spark-control_0.3.3_arm64.deb**를 Spark에 다운로드하세요.
+[GitHub 릴리스](https://github.com/hvlfhvlf/DGX-SPARK-Control/releases/tag/v0.3.4)에서 **dgx-spark-control_0.3.4_arm64.deb**를 Spark에 다운로드하세요.
 
 체크섬 파일 **SHA256SUMS**도 같은 릴리스에서 내려받아 설치 전에 확인할 수 있습니다:
 
@@ -17,7 +17,7 @@ sha256sum --ignore-missing --check SHA256SUMS
 파일을 열 설치 앱이 없거나 터미널을 선호하면 다운로드 폴더에서 실행하세요:
 
 ```bash
-sudo apt install ./dgx-spark-control_0.3.3_arm64.deb
+sudo apt install ./dgx-spark-control_0.3.4_arm64.deb
 ```
 
 `apt` 명령의 `./`를 포함하세요. 파일이 다른 폴더에 있다면 해당 폴더로 먼저 이동하세요. 아래 초기 설정은 **sudo 없이 일반 사용자로** 실행합니다.
@@ -119,13 +119,13 @@ systemctl --user show dgx-spark-control.slice -p MemoryCurrent -p MemoryMax
 
 서버+트레이 상한은 **480 MiB**입니다. 설치 창, 브라우저, 모델과 Tailscale의 메모리는 별도입니다. 이번 버전은 DGX Spark Ubuntu ARM64 대상이며 Windows·다른 플랫폼 확장은 보류합니다.
 
-[전체 사용자 가이드](GUIDE.ko.md) · [검증 기록과 한계](releases/0.3.3.md)
+[전체 사용자 가이드](GUIDE.ko.md) · [검증 기록과 한계](releases/0.3.4.md)
 
 ## LLM / Agent
 
 LLM에 설치·모델 등록을 맡길 때는 [작업 안내서와 복사용 요청문](LLM-GUIDE.ko.md)을 전달하세요.
 
-## 서비스 자동 시작과 앱 업데이트 (0.3.3)
+## 서비스 자동 시작과 앱 업데이트 (0.3.4)
 
 모델 탭 → 상세 → **Spark 부팅 시 자동 시작**은 등록된 선택 프로필의 실제 사용자 서비스 설정을 바꿉니다. 현재 실행 상태는 바꾸지 않습니다. 로그인 전 시작에는 linger가 필요하며, 동시에 켤 모델의 메모리와 프로필 충돌을 확인하세요.
 

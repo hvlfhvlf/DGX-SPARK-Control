@@ -1,3 +1,15 @@
+# 0.3.4 — 2026-11-11
+
+- Publish the Settings-style rectangular boot-autostart switch in service Details.
+- Retain a 44px touch target, keyboard semantics, theme colors, saving lock and explicit unavailable state. No backend, authentication, schema or lifecycle changes.
+- Align Korean/English installation, user and LLM guides and release packages.
+
+Validation and limitations: [0.3.4 release record](docs/releases/0.3.4.md). The candidate below is historical and is included in this stable release.
+
+# 0.3.4~rc1 — local UI candidate, 2026-11-06
+
+- Match the service boot-autostart control to the rectangular Settings switch. Keep a 44px touch target, keyboard switching, theme colors, saving lock and explicit unavailable state. No API or lifecycle changes. Private at the time; incorporated into 0.3.4.
+
 # 0.3.3 — 2026-11-06
 
 - Publish the tested rc1–rc6 runtime: secure on-demand Harness app opening and correct start-after-stop port checks.

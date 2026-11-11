@@ -1,6 +1,6 @@
 # DGX-SPARK-Control user guide — English
 
-**0.3.3** · [한국어](GUIDE.ko.md) · [Easy installation](QUICKSTART.en.md)
+**0.3.4** · [한국어](GUIDE.ko.md) · [Easy installation](QUICKSTART.en.md)
 
 ## Metric details
 
@@ -145,7 +145,7 @@ Model files are inventory, not generated launch configurations. Connect an exist
 Activity supports search, failed/interrupted filtering and date folding. Clear includes completed entries outside the filter, across devices. Service-process filtering excludes common desktop/system groups; it is not exclusively a registered-model list.
 Package installations update through the new .deb with apt, never archive update scripts.
 
-## Status and control guidance (0.3.3)
+## Status and control guidance (0.3.4)
 
 - **API responding** means the current API answered; it does not guarantee successful generation or performance. **Last action** describes a historical control request separately from current health.
 - Process-only services use **OPEN APP** and explain **Process running confirmed · Connection status not checked** in Details. Unreachable, unknown and disconnected states are not presented as ready.
@@ -163,14 +163,14 @@ Desktop spacing is unchanged. At widths of 600px and below, Comfortable uses a d
 
 Use the sun / moon icon beside Language and System power to switch modes. Black is the default. Settings → Accent color shows Acid lime, Lavender and Ice blue with color chips. The selection applies to controls, charts and chip artwork; warning and failure colors retain their meaning. White mode uses darker accent text and graph lines for legibility. Appearance is saved per browser and restored on reload; it does not change other devices.
 
-## DeepSeek Harness connection (0.3.3)
+## DeepSeek Harness connection (0.3.4)
 
 Register the existing `deepseek-harness.service` with the process adapter, explicit control permission and its HTTPS app address. **Open App** obtains the current Harness authentication URL through the signed-in dashboard and opens a new tab. Allow pop-ups for this dashboard if blocked. Never paste a token into the app URL field. The current integration supports the local default Harness layout and port 3080.
 
 Harness process state and the connected LLM's readiness are separate. Its configured inference server must also be running to answer requests. Harness start/stop controls only that app; it does not automatically start or stop the model. The dashboard does not collect conversations or workspace files.
 
 
-## App updates (0.3.3)
+## App updates (0.3.4)
 
 Model Bay → Details shows the installed app version. **Check for updates** contacts the official source; when a compatible candidate is available, it becomes **Update**. Stop the app first. Confirm **Back up & update** to create a private snapshot, install and perform basic validation. A failure attempts restoration; a recovery warning means local attention is required. Start the app manually afterwards and test its normal workflow. Running apps are never automatically stopped. Unsupported profiles show unavailable instead of a guessed version.
 
@@ -179,12 +179,14 @@ The dashboard does not update model weights, CUDA/drivers or ComfyUI custom node
 ### Application backup storage
 Checking for updates creates no backups. Applying an update does. Successful validation retains one managed recovery backup per service. Old and new copies coexist temporarily, so extra free space is required. Failed/review-required recovery material is retained and further updates are blocked until local review. Model/media directories and ComfyUI custom nodes remain in place.
 
-### Start services at boot (0.3.3)
+### Start services at boot (0.3.4)
+The boot control uses the same rectangular switch as Settings. The colored square on the right means ON; the left position means OFF. A disabled dash means the state is unavailable; saving temporarily locks the control.
+
 Model Bay → Details → **Start when Spark boots**. ON/OFF applies to the selected launch profile and persists on Spark for all dashboard clients. It does not start or stop a service now. OFF does not prevent manual/dependency starts. The actual service setting is read on opening Details; no periodic scanning is added.
 User lingering must be enabled on Spark for startup before login. Unsupported, masked/static, or compound Install configurations require local setup. Only registered controllable user services targeting default.target are editable. Turn off conflicting profiles first and turn off the current profile before replacing/removing it. Dependencies and model memory capacity still need appropriate local configuration; enabling startup does not guarantee the inference API becomes ready.
 
 
-## Connection reliability (0.3.3)
+## Connection reliability (0.3.4)
 
 Delayed updates and disconnected nodes are separate states. Controls pause during telemetry delay. History/activity failures affect only their section; polling recovers automatically. History loads only for visible graphs, using incremental samples after the first read. Restarting the server resets the cursor. Hidden tabs pause regular polling.
 
@@ -192,3 +194,4 @@ Delayed updates and disconnected nodes are separate states. Controls pause durin
 Closed service dialogs no longer keep status requests alive. App-update status pauses in a hidden tab and resumes when returning to visible Details. Closing Details does not cancel an update already accepted by Spark; reopen Details to inspect it.
 
 Before the first reading arrives, the overview shows Connecting; this is not a disconnected node.
+
